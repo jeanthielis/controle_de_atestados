@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestão Saúde 3.0</title>
+    <title>Gestão Saúde 5.0 (Cloud)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -12,9 +12,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        /* --- SISTEMA DE CORES (VARIÁVEIS) --- */
+        /* --- ESTILOS GERAIS (Mantendo o design v4.3) --- */
         :root {
-            /* Modo Claro (Padrão) */
             --primary: #4f46e5;
             --primary-dark: #4338ca;
             --bg: #f3f4f6;
@@ -29,7 +28,6 @@
             --radius: 16px;
         }
 
-        /* Modo Escuro */
         [data-theme="dark"] {
             --bg: #111827;
             --surface: #1f2937;
@@ -42,155 +40,73 @@
         }
 
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 90px; color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding-bottom: 90px;
-            color: var(--text-main);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        /* --- HEADER --- */
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 20px 20px 60px 20px;
-            border-bottom-left-radius: 30px;
-            border-bottom-right-radius: 30px;
-            box-shadow: var(--shadow);
-            position: relative;
-            z-index: 50;
-        }
-
+        /* Header e Layout */
+        header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px 20px 60px 20px; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; box-shadow: var(--shadow); position: relative; z-index: 50; }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .header-actions { display: flex; gap: 15px; align-items: center; }
         .icon-btn { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; transition: background 0.2s; }
-        .icon-btn:active { background: rgba(255,255,255,0.4); }
-
+        
         h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
         .subtitle { font-size: 0.85rem; opacity: 0.9; }
 
-        /* --- FILTROS --- */
-        .filter-bar {
-            background: var(--surface);
-            margin: -40px 20px 10px 20px;
-            padding: 10px;
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            display: flex; gap: 10px;
-            position: relative; z-index: 60;
-            overflow-x: auto;
-            border: 1px solid var(--border);
-        }
+        /* Filtros */
+        .filter-bar { background: var(--surface); margin: -40px 20px 10px 20px; padding: 10px; border-radius: 16px; box-shadow: var(--shadow); display: flex; gap: 10px; position: relative; z-index: 60; overflow-x: auto; border: 1px solid var(--border); }
+        .filter-select { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; min-width: 90px; background-color: var(--surface-2); color: var(--text-main); font-weight: 600; }
 
-        .filter-select {
-            flex: 1; padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.85rem; min-width: 90px;
-            background-color: var(--surface-2);
-            color: var(--text-main);
-            -webkit-appearance: none;
-        }
-
-        /* --- CARDS & UI --- */
+        /* Cards e UI */
         .container { padding: 0 20px; }
-        
-        .card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-
+        .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
         .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
         .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
         .card-info { font-size: 0.85rem; color: var(--text-light); }
         .card-metric { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
-        
         .chart-container { position: relative; height: 220px; width: 100%; margin-top: 15px; }
-
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
         .badge-red { background: var(--danger-bg); color: var(--danger); }
         .badge-blue { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
 
-        /* --- BOTÕES --- */
-        .btn {
-            width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-weight: 600; font-size: 1rem; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
-            transition: opacity 0.2s;
-        }
+        /* Botões */
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: opacity 0.2s; }
         .btn:active { opacity: 0.8; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: var(--danger-bg); color: var(--danger); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
         .btn-sm { padding: 8px 16px; font-size: 0.8rem; width: auto; }
-        
         .btn-pdf { background: var(--text-main); color: var(--bg); margin-bottom: 20px; }
 
-        /* --- NAVEGAÇÃO --- */
-        .nav-bar {
-            position: fixed; bottom: 20px; left: 20px; right: 20px;
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(12px);
-            border-radius: 24px; display: flex; justify-content: space-around;
-            padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100;
-        }
-        /* Ajuste nav bar para dark mode */
-        [data-theme="dark"] .nav-bar {
-            background: rgba(31, 41, 55, 0.9);
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
+        /* Navegação e Modais */
+        .nav-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-radius: 24px; display: flex; justify-content: space-around; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; }
+        [data-theme="dark"] .nav-bar { background: rgba(31, 41, 55, 0.9); border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .nav-item { background: none; border: none; font-size: 0.7rem; color: var(--text-light); display: flex; flex-direction: column; align-items: center; }
         .nav-item.active { color: var(--primary); font-weight: 700; }
         .nav-icon { font-size: 1.5rem; margin-bottom: 2px; }
-
-        .fab {
-            position: fixed; bottom: 100px; right: 20px;
-            background: var(--primary); color: white;
-            width: 56px; height: 56px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
-            z-index: 90; cursor: pointer; border: none;
-        }
-
-        /* --- MODAL --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6); z-index: 199; display: none; backdrop-filter: blur(2px);
-        }
-        .modal-sheet {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--surface); border-top-left-radius: 24px; border-top-right-radius: 24px;
-            padding: 24px; z-index: 200; transform: translateY(100%); transition: transform 0.3s;
-            max-height: 90vh; overflow-y: auto;
-            color: var(--text-main);
-        }
+        
+        .fab { position: fixed; bottom: 100px; right: 20px; background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); z-index: 90; cursor: pointer; border: none; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 199; display: none; backdrop-filter: blur(2px); }
+        .modal-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; z-index: 200; transform: translateY(100%); transition: transform 0.3s; max-height: 90vh; overflow-y: auto; color: var(--text-main); }
         .modal-sheet.active { transform: translateY(0); }
         
-        input, select { 
-            width: 100%; padding: 12px; margin-bottom: 15px; 
-            border: 1px solid var(--border); border-radius: 10px; 
-            background: var(--surface-2); color: var(--text-main);
-            font-family: 'Inter', sans-serif; 
-        }
+        input, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text-main); font-family: 'Inter', sans-serif; }
 
-        /* Utilitários */
         .screen { display: none; opacity: 0; animation: fadeIn 0.3s forwards; }
         .screen.active { display: block; }
         @keyframes fadeIn { to { opacity: 1; } }
-        .no-print { } /* Classe usada no script PDF */
+
+        /* Loader Overlay */
+        #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; color:var(--primary); transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(79, 70, 229, 0.2); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+
+<div id="loader">
+    <div class="spinner"></div>
+    <div>Conectando ao Banco de Dados...</div>
+</div>
 
 <header>
     <div class="header-top">
@@ -199,10 +115,10 @@
             <h1 id="page-title">Dashboard</h1>
         </div>
         <div class="header-actions">
-            <button class="icon-btn" onclick="toggleTheme()" title="Alternar Tema">
+            <button class="icon-btn" onclick="window.toggleTheme()" title="Alternar Tema">
                 <i id="theme-icon" class="ph ph-moon"></i>
             </button>
-            <button class="icon-btn" onclick="navTo('settings')" title="Configurações">
+            <button class="icon-btn" onclick="window.navTo('settings')" title="Configurações">
                 <i class="ph ph-gear"></i>
             </button>
         </div>
@@ -210,9 +126,9 @@
 </header>
 
 <div id="dashboard-filters" class="filter-bar">
-    <select id="filter-year" class="filter-select" onchange="applyFilters()">
+    <select id="filter-year" class="filter-select" onchange="window.renderDashboard()">
         </select>
-    <select id="filter-month" class="filter-select" onchange="applyFilters()">
+    <select id="filter-month" class="filter-select" onchange="window.renderDashboard()">
         <option value="all">Mês: Todos</option>
         <option value="0">Janeiro</option>
         <option value="1">Fevereiro</option>
@@ -227,7 +143,7 @@
         <option value="10">Novembro</option>
         <option value="11">Dezembro</option>
     </select>
-    <select id="filter-team" class="filter-select" onchange="applyFilters()">
+    <select id="filter-team" class="filter-select" onchange="window.renderDashboard()">
         <option value="all">Equipe: Todas</option>
         </select>
 </div>
@@ -247,240 +163,317 @@
 
         <div class="card">
             <div class="card-title">Evolução Anual</div>
-            <div class="card-info" id="evolution-subtitle">Atestados por mês</div>
-            <div class="chart-container">
-                <canvas id="chartEvolution"></canvas>
-            </div>
+            <div class="card-info" id="evolution-subtitle">Atestados por período</div>
+            <div class="chart-container"><canvas id="chartEvolution"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Padrão Semanal</div>
+            <div class="card-info">Ocorrências por dia</div>
+            <div class="chart-container"><canvas id="chartWeekDay"></canvas></div>
         </div>
 
         <div class="card">
             <div class="card-title">Ranking: Frequência</div>
             <div class="card-info">Top 5 Colaboradores</div>
-            <div class="chart-container">
-                <canvas id="chartRankingQty"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="chartRankingQty"></canvas></div>
         </div>
-
+        
         <div class="card">
             <div class="card-title">Ranking: Gravidade</div>
             <div class="card-info">Top 5 Dias Afastados</div>
-            <div class="chart-container">
-                <canvas id="chartRankingDays"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="chartRankingDays"></canvas></div>
         </div>
     </div>
-
-    <button class="btn btn-pdf no-print" onclick="generatePDF()">
+    <button class="btn btn-pdf no-print" onclick="window.generatePDF()">
         <i class="ph ph-file-pdf"></i> Baixar Relatório PDF
     </button>
 </div>
 
 <div id="screen-list" class="screen container" style="margin-top: 20px;">
     <h3>Histórico</h3>
+    <div style="margin-bottom: 15px;">
+        <select id="filter-history-emp" onchange="window.renderList()" class="filter-select" style="width: 100%;">
+            <option value="all">Todos os Colaboradores</option>
+        </select>
+    </div>
+    <div id="list-summary" style="margin-bottom:15px; font-size:0.85rem; color:var(--primary); font-weight:600; display:none;"></div>
     <div id="certificates-list"></div>
-    <button class="fab" onclick="openModal('certificate')">
-        <i class="ph ph-plus"></i>
-    </button>
+    <button class="fab" onclick="window.openModal('certificate')"><i class="ph ph-plus"></i></button>
 </div>
 
 <div id="screen-team" class="screen container" style="margin-top: 20px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h3>Colaboradores</h3>
-        <button class="btn btn-primary btn-sm" onclick="openModal('employee')">
-            <i class="ph ph-user-plus"></i> Novo
-        </button>
+        <button class="btn btn-primary btn-sm" onclick="window.openModal('employee')"><i class="ph ph-user-plus"></i> Novo</button>
     </div>
     <div id="employees-list"></div>
 </div>
 
 <div id="screen-settings" class="screen container" style="margin-top: 20px;">
-    <h3>Gerenciar Dados</h3>
+    <h3>Configurações</h3>
     <div class="card">
-        <div class="card-title">Backup e Restauração</div>
-        <div class="card-info" style="margin-bottom:15px;">Importe ou exporte seus dados para segurança.</div>
-        
-        <label>Importar Arquivo (.json)</label>
-        <input type="file" id="fileInput" accept=".json">
-        
-        <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:10px;">
-            <i class="ph ph-download-simple"></i> Exportar Backup
-        </button>
-        
-        <button class="btn btn-danger" onclick="clearData()">
-            <i class="ph ph-trash"></i> Resetar Tudo
-        </button>
+        <div class="card-title">Banco de Dados (Nuvem)</div>
+        <div class="card-info">Seus dados estão sincronizados com o Google Firebase.</div>
+        <div style="margin-top:10px; font-size:0.8rem; color:var(--success);">● Conectado Online</div>
     </div>
-    <div style="text-align:center; color:var(--text-light); font-size:0.8rem; margin-top:20px;">
-        Versão 4.0 - Supervisor Pro
+    <div class="card">
+        <div class="card-title">Exportar Dados</div>
+        <div class="card-info">Baixe uma cópia dos dados atuais.</div>
+        <button class="btn btn-primary" onclick="window.exportData()" style="margin-top:10px;">
+            <i class="ph ph-download-simple"></i> Baixar Backup (.json)
+        </button>
     </div>
 </div>
 
-<div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+<div class="modal-overlay" id="modal-overlay" onclick="window.closeModal()"></div>
 <div class="modal-sheet" id="modal-sheet">
     <div style="width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px auto;"></div>
     <h2 id="modal-title">Novo Registro</h2>
     
     <div id="form-certificate" style="display:none;">
-        <label>Colaborador</label>
-        <select id="cert-employee"></select>
-        <label>Data Início</label>
-        <input type="date" id="cert-date">
+        <label>Colaborador</label><select id="cert-employee"></select>
+        <label>Data Início</label><input type="date" id="cert-date">
         <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px;">
             <div><label>Dias</label><input type="number" id="cert-days" min="1" value="1"></div>
             <div><label>Motivo</label><input type="text" id="cert-reason" placeholder="CID ou Descrição"></div>
         </div>
-        <button class="btn btn-primary" onclick="saveCertificate()">Salvar Registro</button>
+        <button class="btn btn-primary" onclick="window.saveCertificate()">Salvar (Nuvem)</button>
     </div>
 
     <div id="form-employee" style="display:none;">
         <label>Nome Completo</label><input type="text" id="emp-name">
         <label>Matrícula</label><input type="text" id="emp-matricula">
         <label>Equipe</label><input type="text" id="emp-team">
-        <button class="btn btn-primary" onclick="saveEmployee()">Cadastrar Funcionário</button>
+        <button class="btn btn-primary" onclick="window.saveEmployee()">Cadastrar (Nuvem)</button>
     </div>
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-item active" onclick="navTo('dashboard')">
-        <i class="ph ph-chart-pie-slice nav-icon"></i> Dash
-    </button>
-    <button class="nav-item" onclick="navTo('list')">
-        <i class="ph ph-list-dashes nav-icon"></i> Lista
-    </button>
-    <button class="nav-item" onclick="navTo('team')">
-        <i class="ph ph-users nav-icon"></i> Equipe
-    </button>
+    <button class="nav-item active" onclick="window.navTo('dashboard')"><i class="ph ph-chart-pie-slice nav-icon"></i>Dash</button>
+    <button class="nav-item" onclick="window.navTo('list')"><i class="ph ph-list-dashes nav-icon"></i>Lista</button>
+    <button class="nav-item" onclick="window.navTo('team')"><i class="ph ph-users nav-icon"></i>Equipe</button>
 </nav>
 
-<script>
-    let db = { employees: [], certificates: [] };
-    let charts = {};
-    let currentTheme = 'light';
+<script type="module">
+    // --- 1. IMPORTAR SDK DO FIREBASE ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    window.onload = () => {
-        loadData();
-        loadTheme();
-        initFilters();
-        updateDashboard();
-        document.getElementById('fileInput').addEventListener('change', handleImport);
+    // --- 2. CONFIGURAÇÃO (SUA CHAVE) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjdyooWyI-7P6JKj3fH0A_6YNEUq1oRrc",
+      authDomain: "gestao-saude-e34a4.firebaseapp.com",
+      projectId: "gestao-saude-e34a4",
+      storageBucket: "gestao-saude-e34a4.firebasestorage.app",
+      messagingSenderId: "422347874022",
+      appId: "1:422347874022:web:f995779a9f62e6d51da527"
     };
 
-    // --- THEME ENGINE ---
-    function toggleTheme() {
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
+    // --- 3. INICIALIZAR APP ---
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- ESTADO LOCAL (Sincronizado com Nuvem) ---
+    // Usamos isso para manter o app rápido sem ler o banco a cada clique
+    window.localData = { employees: [], certificates: [] };
+    let charts = {};
+    let currentTheme = localStorage.getItem('appTheme') || 'light';
+
+    // --- INICIALIZAÇÃO ---
+    window.onload = () => {
+        setupListeners(); // Liga a conexão Real-Time
+        applyTheme(currentTheme);
+    };
+
+    // --- 4. FUNÇÕES DE BANCO DE DADOS (REAL-TIME) ---
+    function setupListeners() {
+        // Ouvir Funcionários
+        const unsubEmp = onSnapshot(collection(db, "employees"), (snapshot) => {
+            window.localData.employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            refreshUI();
+        });
+
+        // Ouvir Atestados
+        const unsubCert = onSnapshot(collection(db, "certificates"), (snapshot) => {
+            window.localData.certificates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            refreshUI();
+            
+            // Remove Loading Screen na primeira carga
+            const loader = document.getElementById('loader');
+            if(loader) { loader.style.opacity = '0'; setTimeout(()=>loader.remove(), 500); }
+        });
     }
 
-    function setTheme(theme) {
-        currentTheme = theme;
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('appTheme', theme);
-        
-        // Update Icon
-        const icon = document.getElementById('theme-icon');
-        icon.className = theme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
-
-        // Update Charts (colors need to change)
-        updateChartColors();
-        updateDashboard();
+    function refreshUI() {
+        // Atualiza filtros se necessário
+        initFilters();
+        // Atualiza tela atual
+        const activeScreen = document.querySelector('.screen.active').id;
+        if(activeScreen === 'screen-dashboard') window.renderDashboard();
+        if(activeScreen === 'screen-list') { populateHistoryFilter(); window.renderList(); }
+        if(activeScreen === 'screen-team') window.renderTeam();
     }
 
-    function loadTheme() {
-        const saved = localStorage.getItem('appTheme') || 'light';
-        setTheme(saved);
-    }
+    // --- FUNÇÕES GLOBAIS (Acessíveis pelo HTML) ---
+    
+    // Adicionar Funcionário
+    window.saveEmployee = async () => {
+        const name = document.getElementById('emp-name').value;
+        const mat = document.getElementById('emp-matricula').value;
+        const team = document.getElementById('emp-team').value;
+        if(!name) return alert('Nome obrigatório');
 
-    function updateChartColors() {
-        // Pega as cores do CSS atual
-        const styles = getComputedStyle(document.body);
-        const textColor = styles.getPropertyValue('--text-light').trim();
-        const borderColor = styles.getPropertyValue('--border').trim();
-        
-        Chart.defaults.color = textColor;
-        Chart.defaults.borderColor = borderColor;
-    }
+        try {
+            await addDoc(collection(db, "employees"), {
+                name: name,
+                matricula: mat || "000",
+                team: team || "1",
+                createdAt: new Date().toISOString()
+            });
+            window.closeModal();
+            document.getElementById('emp-name').value = "";
+        } catch (e) { alert("Erro ao salvar: " + e.message); }
+    };
 
-    // --- NAVIGATION ---
-    function navTo(screenId) {
+    // Adicionar Atestado
+    window.saveCertificate = async () => {
+        const empId = document.getElementById('cert-employee').value;
+        const date = document.getElementById('cert-date').value;
+        const days = document.getElementById('cert-days').value;
+        const reason = document.getElementById('cert-reason').value;
+        if(!empId || !date || !days) return alert('Preencha os campos obrigatórios');
+
+        try {
+            await addDoc(collection(db, "certificates"), {
+                empId: empId,
+                date: date,
+                days: parseInt(days),
+                reason: reason,
+                createdAt: new Date().toISOString()
+            });
+            window.closeModal();
+            // Limpa form
+            document.getElementById('cert-reason').value = "";
+            document.getElementById('cert-days').value = "1";
+        } catch (e) { alert("Erro ao salvar: " + e.message); }
+    };
+
+    // Excluir
+    window.delEmp = async (id) => {
+        if(confirm("Excluir funcionário?")) await deleteDoc(doc(db, "employees", id));
+    };
+    window.delCert = async (id) => {
+        if(confirm("Excluir atestado?")) await deleteDoc(doc(db, "certificates", id));
+    };
+
+    // --- UI LOGIC (Mesma da v4.3, adaptada para window.localData) ---
+    
+    window.navTo = (screenId) => {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.getElementById('screen-' + screenId).classList.add('active');
         
-        // Filter visibility
         document.getElementById('dashboard-filters').style.display = screenId === 'dashboard' ? 'flex' : 'none';
-
-        const map = { dashboard: 0, list: 1, team: 2, settings: 2 }; // Settings lights up Team or none
-        if(screenId !== 'settings') {
-             document.querySelectorAll('.nav-item')[map[screenId]].classList.add('active');
-        }
+        const map = { dashboard: 0, list: 1, team: 2, settings: 2 }; 
+        if(screenId !== 'settings') document.querySelectorAll('.nav-item')[map[screenId]].classList.add('active');
         
         const titles = { dashboard: 'Dashboard', list: 'Histórico', team: 'Equipe', settings: 'Configurações' };
         document.getElementById('page-title').innerText = titles[screenId];
         
-        if(screenId === 'dashboard') updateDashboard();
-        if(screenId === 'list') renderList();
-        if(screenId === 'team') renderTeam();
+        refreshUI();
+    };
+
+    window.toggleTheme = () => {
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        applyTheme(newTheme);
+    };
+
+    function applyTheme(theme) {
+        currentTheme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('appTheme', theme);
+        document.getElementById('theme-icon').className = theme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
+        
+        // Chart Colors Update
+        const styles = getComputedStyle(document.body);
+        Chart.defaults.color = styles.getPropertyValue('--text-light').trim();
+        Chart.defaults.borderColor = styles.getPropertyValue('--border').trim();
+        if(document.getElementById('screen-dashboard').classList.contains('active')) window.renderDashboard();
     }
 
-    // --- CORE LOGIC (Filters, Charts, DB) same as V3 but refined ---
+    // --- RENDERIZADORES ---
     function initFilters() {
         const yearSel = document.getElementById('filter-year');
+        const teamSel = document.getElementById('filter-team');
+        const currentYearVal = yearSel.value;
+        const currentTeamVal = teamSel.value;
+
+        // Anos
         const currentYear = new Date().getFullYear();
-        const years = [...new Set(db.certificates.map(c => new Date(c.date).getFullYear()))];
+        const years = [...new Set(window.localData.certificates.map(c => new Date(c.date).getFullYear()))];
         if(!years.includes(currentYear)) years.push(currentYear);
         years.sort((a,b) => b-a);
         
         yearSel.innerHTML = '';
         years.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
-        updateTeamFilter();
-    }
+        if(currentYearVal && years.includes(parseInt(currentYearVal))) yearSel.value = currentYearVal;
 
-    function updateTeamFilter() {
-        const teamSel = document.getElementById('filter-team');
-        const currentVal = teamSel.value;
-        const teams = [...new Set(db.employees.map(e => e.team))].sort();
+        // Equipes
+        const teams = [...new Set(window.localData.employees.map(e => e.team))].sort();
         teamSel.innerHTML = '<option value="all">Equipe: Todas</option>';
         teams.forEach(t => teamSel.innerHTML += `<option value="${t}">TM ${t}</option>`);
-        if(currentVal) teamSel.value = currentVal;
+        if(currentTeamVal) teamSel.value = currentTeamVal;
     }
 
-    function getFilteredData() {
+    function populateHistoryFilter() {
+        const sel = document.getElementById('filter-history-emp');
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="all">Todos os Colaboradores</option>';
+        const sortedEmps = [...window.localData.employees].sort((a,b) => a.name.localeCompare(b.name));
+        sortedEmps.forEach(e => sel.innerHTML += `<option value="${e.id}">${e.name}</option>`);
+        sel.value = currentVal;
+    }
+
+    window.renderDashboard = () => {
         const year = parseInt(document.getElementById('filter-year').value);
         const month = document.getElementById('filter-month').value;
         const team = document.getElementById('filter-team').value;
+        const monthName = document.getElementById('filter-month').options[document.getElementById('filter-month').selectedIndex].text;
 
-        return db.certificates.filter(c => {
-            const d = new Date(c.date);
-            const emp = db.employees.find(e => e.id == c.empId);
+        // Filtro
+        const filteredData = window.localData.certificates.filter(c => {
+            const d = new Date(c.date + 'T12:00:00');
+            const emp = window.localData.employees.find(e => e.id == c.empId);
             if(d.getFullYear() !== year) return false;
             if(month !== 'all' && d.getMonth() != month) return false;
             if(team !== 'all' && (!emp || emp.team != team)) return false;
             return true;
         });
-    }
 
-    function updateDashboard() {
-        const filteredData = getFilteredData();
-        const year = document.getElementById('filter-year').value;
-        
+        // KPIs
         document.getElementById('kpi-total').innerText = filteredData.length;
         document.getElementById('kpi-days').innerText = filteredData.reduce((acc, c) => acc + parseInt(c.days||0), 0);
-        document.getElementById('evolution-subtitle').innerText = `Panorama do ano ${year}`;
+        
+        let rangeText = `Ano ${year}`;
+        if(month !== 'all') rangeText += ` - ${monthName}`;
+        document.getElementById('evolution-subtitle').innerText = rangeText;
 
-        renderEvolutionChart(year); 
+        // Charts
+        renderEvolutionChart(year, month, team);
+        renderWeekDayChart(filteredData);
         renderRankingCharts(filteredData);
-    }
+    };
 
-    function renderEvolutionChart(year) {
-        const team = document.getElementById('filter-team').value;
-        const dataYear = db.certificates.filter(c => {
-            const d = new Date(c.date);
-            const emp = db.employees.find(e => e.id == c.empId);
+    function renderEvolutionChart(year, selectedMonth, team) {
+        const dataYear = window.localData.certificates.filter(c => {
+            const d = new Date(c.date + 'T12:00:00');
+            const emp = window.localData.employees.find(e => e.id == c.empId);
             return d.getFullYear() == year && (team === 'all' || (emp && emp.team == team));
         });
 
         const counts = Array(12).fill(0);
-        dataYear.forEach(c => counts[new Date(c.date).getMonth()]++);
+        dataYear.forEach(c => counts[new Date(c.date + 'T12:00:00').getMonth()]++);
 
         const ctx = document.getElementById('chartEvolution').getContext('2d');
         if(charts.evolution) charts.evolution.destroy();
@@ -490,23 +483,34 @@
             data: {
                 labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
                 datasets: [{
-                    label: 'Atestados',
-                    data: counts,
-                    borderColor: '#4f46e5',
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                    fill: true,
-                    tension: 0.4
+                    label: 'Atestados', data: counts, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4,
+                    pointRadius: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? 8 : 4,
+                    pointBackgroundColor: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? '#ef4444' : '#4f46e5'
                 }]
             },
-            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales: { y: { beginAtZero: true, ticks: {precision:0} } } }
+        });
+    }
+
+    function renderWeekDayChart(data) {
+        const daysCount = [0,0,0,0,0,0,0];
+        data.forEach(c => { daysCount[new Date(c.date + 'T12:00:00').getDay()]++; });
+        const bgColors = daysCount.map((_, i) => (i === 1) ? '#ef4444' : (i === 0 || i === 6) ? 'rgba(209, 213, 219, 0.5)' : '#4f46e5');
+        
+        const ctx = document.getElementById('chartWeekDay').getContext('2d');
+        if(charts.weekday) charts.weekday.destroy();
+        charts.weekday = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], datasets: [{ data: daysCount, backgroundColor: bgColors, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
         });
     }
 
     function renderRankingCharts(data) {
         let mapQty = {}, mapDays = {};
         data.forEach(c => {
-            const emp = db.employees.find(e => e.id == c.empId);
-            const name = emp ? emp.name.split(' ')[0] + ' ' + (emp.name.split(' ')[1]||'') : '???';
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            const name = emp ? emp.name.split(' ')[0] + ' ' + (emp.name.split(' ')[1]||'') : 'Desconhecido';
             mapQty[name] = (mapQty[name] || 0) + 1;
             mapDays[name] = (mapDays[name] || 0) + parseInt(c.days);
         });
@@ -516,125 +520,54 @@
 
         if(charts.qty) charts.qty.destroy();
         charts.qty = new Chart(document.getElementById('chartRankingQty'), {
-            type: 'bar',
-            data: { labels: topQty.map(i=>i[0]), datasets:[{ data: topQty.map(i=>i[1]), backgroundColor:'#4f46e5', borderRadius:4 }] },
+            type: 'bar', data: { labels: topQty.map(i=>i[0]), datasets:[{ data: topQty.map(i=>i[1]), backgroundColor:'#4f46e5', borderRadius:4 }] },
             options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
         });
 
         if(charts.days) charts.days.destroy();
         charts.days = new Chart(document.getElementById('chartRankingDays'), {
-            type: 'bar',
-            data: { labels: topDays.map(i=>i[0]), datasets:[{ data: topDays.map(i=>i[1]), backgroundColor:'#ef4444', borderRadius:4 }] },
+            type: 'bar', data: { labels: topDays.map(i=>i[0]), datasets:[{ data: topDays.map(i=>i[1]), backgroundColor:'#ef4444', borderRadius:4 }] },
             options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
         });
     }
 
-    // --- PDF ENGINE ---
-    function generatePDF() {
-        const element = document.getElementById('report-area');
-        const btn = document.querySelector('.btn-pdf');
-        
-        // 1. Force Light Mode for clean printing
-        const wasDark = currentTheme === 'dark';
-        if(wasDark) {
-            document.documentElement.setAttribute('data-theme', 'light');
-            updateChartColors();
-            updateDashboard(); // Re-render charts with light colors
-        }
+    window.renderList = () => {
+        const list = document.getElementById('certificates-list');
+        const summary = document.getElementById('list-summary');
+        const filterId = document.getElementById('filter-history-emp').value;
+        list.innerHTML = '';
 
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
+        let data = [...window.localData.certificates];
+        if(filterId !== 'all') {
+            data = data.filter(c => c.empId == filterId);
+            const emp = window.localData.employees.find(e => e.id == filterId);
+            const totalDays = data.reduce((acc, c) => acc + parseInt(c.days), 0);
+            summary.style.display = 'block';
+            summary.innerText = `Exibindo ${data.length} registros de ${emp ? emp.name.split(' ')[0] : '...'} (${totalDays} dias totais)`;
+        } else { summary.style.display = 'none'; }
 
-        // Wait for chart re-render
-        setTimeout(() => {
-            const opt = {
-                margin: 10,
-                filename: `relatorio_saude_${new Date().toISOString().slice(0,10)}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+        data.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                btn.innerHTML = originalText;
-                // Restore Theme
-                if(wasDark) {
-                    setTheme('dark');
-                }
-            });
-        }, 500);
-    }
-
-    // --- DATA HANDLING ---
-    function loadData() {
-        const d = localStorage.getItem('atestadosV3');
-        if(d) db = JSON.parse(d);
-    }
-    function saveData() {
-        localStorage.setItem('atestadosV3', JSON.stringify(db));
-        updateDashboard();
-    }
-    
-    // UI Helpers
-    function openModal(type) {
-        document.getElementById('modal-overlay').style.display='block';
-        setTimeout(()=>document.getElementById('modal-sheet').classList.add('active'),10);
-        document.getElementById('form-certificate').style.display = type==='certificate'?'block':'none';
-        document.getElementById('form-employee').style.display = type==='employee'?'block':'none';
-        document.getElementById('modal-title').innerText = type==='certificate'?'Lançar Atestado':'Novo Colaborador';
-        if(type==='certificate') {
-            const sel = document.getElementById('cert-employee'); sel.innerHTML='';
-            db.employees.forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`);
-            document.getElementById('cert-date').valueAsDate = new Date();
-        }
-    }
-    function closeModal() {
-        document.getElementById('modal-sheet').classList.remove('active');
-        setTimeout(()=>document.getElementById('modal-overlay').style.display='none',300);
-    }
-
-    function saveCertificate() {
-        const empId=document.getElementById('cert-employee').value;
-        const date=document.getElementById('cert-date').value;
-        const days=document.getElementById('cert-days').value;
-        const reason=document.getElementById('cert-reason').value;
-        if(!empId||!date||!days) return alert('Preencha tudo');
-        db.certificates.push({id:Date.now(), empId, date, days, reason});
-        saveData(); closeModal();
-    }
-    function saveEmployee() {
-        const name=document.getElementById('emp-name').value;
-        const mat=document.getElementById('emp-matricula').value;
-        const team=document.getElementById('emp-team').value;
-        if(!name) return alert('Nome obrigatório');
-        db.employees.push({id:Date.now(), name, matricula:mat||'000', team:team||'1'});
-        saveData(); updateTeamFilter(); closeModal();
-    }
-
-    function renderList() {
-        const list=document.getElementById('certificates-list'); list.innerHTML='';
-        [...db.certificates].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(c=>{
-            const emp = db.employees.find(e=>e.id==c.empId);
+        data.forEach(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
             list.innerHTML += `
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:start;">
                         <div>
                             <div class="card-title">${emp?emp.name:'?'}</div>
-                            <div class="card-info"><i class="ph ph-calendar-blank"></i> ${new Date(c.date).toLocaleDateString('pt-BR')}</div>
+                            <div class="card-info"><i class="ph ph-calendar-blank"></i> ${new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
                         </div>
                         <span class="badge badge-red">${c.days} Dias</span>
                     </div>
                     <div style="margin-top:8px; font-size:0.9rem;">${c.reason}</div>
-                    <button onclick="delCert(${c.id})" class="btn-outline btn-sm" style="border:none; color:var(--danger); margin-top:10px; padding-left:0;">
-                        <i class="ph ph-trash"></i> Excluir
-                    </button>
+                    <button onclick="window.delCert('${c.id}')" class="btn-outline btn-sm" style="border:none; color:var(--danger); margin-top:10px; padding-left:0;"><i class="ph ph-trash"></i> Excluir</button>
                 </div>`;
         });
-    }
+    };
 
-    function renderTeam() {
+    window.renderTeam = () => {
         const list=document.getElementById('employees-list'); list.innerHTML='';
-        db.employees.forEach(e=>{
+        window.localData.employees.forEach(e=>{
             list.innerHTML += `
                 <div class="card">
                     <div style="display:flex; justify-content:space-between;">
@@ -642,27 +575,52 @@
                         <span class="badge badge-blue">TM ${e.team}</span>
                     </div>
                     <div class="card-info">Matrícula: ${e.matricula}</div>
-                    <button onclick="delEmp(${e.id})" class="btn-outline btn-sm" style="border:none; color:var(--danger); margin-top:10px; padding-left:0;">
-                         <i class="ph ph-trash"></i> Remover
-                    </button>
+                    <button onclick="window.delEmp('${e.id}')" class="btn-outline btn-sm" style="border:none; color:var(--danger); margin-top:10px; padding-left:0;"><i class="ph ph-trash"></i> Remover</button>
                 </div>`;
         });
-    }
+    };
 
-    function delCert(id) { if(confirm('Excluir?')){ db.certificates=db.certificates.filter(c=>c.id!=id); saveData(); renderList(); } }
-    function delEmp(id) { if(confirm('Excluir?')){ db.employees=db.employees.filter(e=>e.id!=id); saveData(); renderTeam(); } }
+    // UI Helpers
+    window.openModal = (type) => {
+        document.getElementById('modal-overlay').style.display='block';
+        setTimeout(()=>document.getElementById('modal-sheet').classList.add('active'),10);
+        document.getElementById('form-certificate').style.display = type==='certificate'?'block':'none';
+        document.getElementById('form-employee').style.display = type==='employee'?'block':'none';
+        document.getElementById('modal-title').innerText = type==='certificate'?'Lançar Atestado':'Novo Colaborador';
+        if(type==='certificate') {
+            const sel = document.getElementById('cert-employee'); sel.innerHTML='';
+            window.localData.employees.sort((a,b)=>a.name.localeCompare(b.name)).forEach(e=>sel.innerHTML+=`<option value="${e.id}">${e.name}</option>`);
+            document.getElementById('cert-date').valueAsDate = new Date();
+        }
+    };
+    window.closeModal = () => {
+        document.getElementById('modal-sheet').classList.remove('active');
+        setTimeout(()=>document.getElementById('modal-overlay').style.display='none',300);
+    };
 
-    function exportData() {
+    window.exportData = () => {
         const a = document.createElement('a');
-        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-        a.download = "backup_v4.json"; a.click();
-    }
-    function handleImport(e) {
-        const fr=new FileReader(); fr.onload=(ev)=>{ try { db=JSON.parse(ev.target.result); saveData(); alert('Sucesso!'); location.reload(); } catch(err){alert('Erro');} };
-        if(e.target.files[0]) fr.readAsText(e.target.files[0]);
-    }
-    function clearData() { if(confirm('Resetar tudo?')) { localStorage.removeItem('atestadosV3'); location.reload(); } }
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.localData));
+        a.download = "backup_nuvem_v5.json"; a.click();
+    };
 
+    window.generatePDF = () => {
+        const element = document.getElementById('report-area');
+        const btn = document.querySelector('.btn-pdf');
+        const wasDark = currentTheme === 'dark';
+        if(wasDark) applyTheme('light');
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
+
+        setTimeout(() => {
+            const opt = { margin: 10, filename: `relatorio_saude_nuvem_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                if(wasDark) applyTheme('dark');
+            });
+        }, 800);
+    };
 </script>
 </body>
 </html>
