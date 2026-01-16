@@ -197,6 +197,9 @@
             <option value="all">Todos os Colaboradores</option>
         </select>
     </div>
+    
+    <div id="employee-report-area" style="display:none; margin-bottom: 20px;"></div>
+    
     <div id="list-summary" style="margin-bottom:15px; font-size:0.85rem; color:var(--primary); font-weight:600; display:none;"></div>
     <div id="certificates-list"></div>
     <button class="fab" onclick="window.openModal('certificate')"><i class="ph ph-plus"></i></button>
@@ -367,7 +370,7 @@
         if(confirm("Excluir atestado?")) await deleteDoc(doc(db, "certificates", id));
     };
 
-    // --- UI LOGIC (Mesma da v4.3, adaptada para window.localData) ---
+    // --- UI LOGIC ---
     
     window.navTo = (screenId) => {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
@@ -531,23 +534,104 @@
         });
     }
 
+    // --- NOVA LÓGICA DE LISTA E RELATÓRIO INDIVIDUAL ---
     window.renderList = () => {
         const list = document.getElementById('certificates-list');
         const summary = document.getElementById('list-summary');
+        const reportArea = document.getElementById('employee-report-area');
         const filterId = document.getElementById('filter-history-emp').value;
+        
         list.innerHTML = '';
+        reportArea.innerHTML = ''; 
 
         let data = [...window.localData.certificates];
-        if(filterId !== 'all') {
-            data = data.filter(c => c.empId == filterId);
-            const emp = window.localData.employees.find(e => e.id == filterId);
-            const totalDays = data.reduce((acc, c) => acc + parseInt(c.days), 0);
-            summary.style.display = 'block';
-            summary.innerText = `Exibindo ${data.length} registros de ${emp ? emp.name.split(' ')[0] : '...'} (${totalDays} dias totais)`;
-        } else { summary.style.display = 'none'; }
-
+        
+        // Ordenar por data (mais recente primeiro)
         data.sort((a,b) => new Date(b.date) - new Date(a.date));
 
+        if(filterId !== 'all') {
+            // --- MODO RELATÓRIO INDIVIDUAL ---
+            
+            // 1. Filtrar dados do colaborador
+            data = data.filter(c => c.empId == filterId);
+            const emp = window.localData.employees.find(e => e.id == filterId);
+            
+            // 2. Calcular Estatísticas (Anual e Mensal)
+            const stats = {}; // Estrutura: { 2023: { qtd:0, dias:0, meses: [ {qtd, dias}... ] } }
+            
+            data.forEach(c => {
+                const d = new Date(c.date + 'T12:00:00');
+                const year = d.getFullYear();
+                const month = d.getMonth(); // 0 a 11
+                
+                if(!stats[year]) {
+                    stats[year] = { 
+                        qtd: 0, 
+                        dias: 0, 
+                        months: Array.from({length:12}, () => ({qtd:0, dias:0})) 
+                    };
+                }
+                
+                stats[year].qtd++;
+                stats[year].dias += parseInt(c.days);
+                stats[year].months[month].qtd++;
+                stats[year].months[month].dias += parseInt(c.days);
+            });
+
+            // 3. Gerar HTML do Relatório
+            reportArea.style.display = 'block';
+            summary.style.display = 'none';
+
+            let reportHTML = `
+                <div class="card" style="border: 1px solid var(--primary); background: var(--surface-2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed var(--border);">
+                        <div>
+                            <div class="card-title" style="color:var(--primary); font-size:1.1rem;">${emp ? emp.name : 'Colaborador'}</div>
+                            <div class="card-info">Matrícula: ${emp ? emp.matricula : '--'} | Equipe: TM ${emp ? emp.team : '--'}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="card-metric" style="font-size:1.4rem;">${data.length}</div>
+                            <div class="card-info">Total Geral</div>
+                        </div>
+                    </div>
+            `;
+
+            // Iterar sobre os anos (do mais recente para o antigo)
+            Object.keys(stats).sort((a,b)=>b-a).forEach(year => {
+                const s = stats[year];
+                reportHTML += `
+                    <div style="background:var(--surface); padding:10px; border-radius:8px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.9rem; margin-bottom:8px; color:var(--text-main);">
+                            <span><i class="ph ph-calendar"></i> ${year}</span>
+                            <span style="color:var(--danger);">${s.qtd} Atestados (${s.dias} Dias)</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap:5px;">
+                `;
+
+                const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                s.months.forEach((m, idx) => {
+                    if(m.qtd > 0) {
+                        reportHTML += `
+                            <div style="text-align:center; background:var(--bg); padding:4px; border-radius:4px; font-size:0.75rem;">
+                                <div style="font-weight:600; color:var(--text-light);">${monthNames[idx]}</div>
+                                <div style="font-weight:700; color:var(--text-main);">${m.qtd} (${m.dias}d)</div>
+                            </div>
+                        `;
+                    }
+                });
+                reportHTML += `</div></div>`; // Fecha grid e card do ano
+            });
+
+            reportHTML += `</div>`; // Fecha card principal
+            reportArea.innerHTML = reportHTML;
+
+        } else {
+            // Modo "Todos": esconde relatório
+            reportArea.style.display = 'none';
+            summary.style.display = 'none'; // Ocultar resumo simples também
+        }
+
+        // Renderizar a lista de cards (padrão)
         data.forEach(c => {
             const emp = window.localData.employees.find(e => e.id == c.empId);
             list.innerHTML += `
