@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestão Saúde 6.0 (Cloud)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: rgba(79, 70, 229, 0.1);
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --surface-2: #f9fafb;
+            --text-main: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #111827;
+            --surface: #1f2937;
+            --surface-2: #374151;
+            --text-main: #f3f4f6;
+            --text-light: #9ca3af;
+            --border: #374151;
+            --danger-bg: #451a1a;
+            --success-bg: #064e3b;
+            --warning-bg: #451a03;
+            --primary-light: rgba(79, 70, 229, 0.2);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 90px; color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
+
+        header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px 20px 60px 20px; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; box-shadow: var(--shadow); position: relative; z-index: 50; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; transition: background 0.2s; }
+        .icon-btn:hover { background: rgba(255,255,255,0.35); }
+        
+        h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+        .subtitle { font-size: 0.85rem; opacity: 0.9; }
+
+        .filter-bar { background: var(--surface); margin: -40px 20px 10px 20px; padding: 10px; border-radius: 16px; box-shadow: var(--shadow); display: flex; gap: 10px; position: relative; z-index: 60; overflow-x: auto; border: 1px solid var(--border); }
+        .filter-select { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; min-width: 90px; background-color: var(--surface-2); color: var(--text-main); font-weight: 600; }
+
+        .container { padding: 0 20px; }
+        .card { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.15s; }
+        .card:active { transform: scale(0.99); }
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .kpi-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .card-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+        .card-info { font-size: 0.85rem; color: var(--text-light); }
+        .card-metric { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .card-metric-sm { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+        .chart-container { position: relative; height: 220px; width: 100%; margin-top: 15px; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
+        .badge-red { background: var(--danger-bg); color: var(--danger); }
+        .badge-blue { background: var(--primary-light); color: var(--primary); }
+        .badge-green { background: var(--success-bg); color: var(--success); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning); }
+
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: opacity 0.2s, transform 0.1s; }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger-bg); color: var(--danger); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-sm { padding: 8px 16px; font-size: 0.8rem; width: auto; }
+        .btn-pdf { background: var(--text-main); color: var(--bg); margin-bottom: 20px; }
+        .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; display: inline-flex; align-items: center; font-size: 1.1rem; transition: background 0.15s; }
+        .btn-icon:hover { background: var(--surface-2); }
+        .btn-icon.danger { color: var(--danger); }
+        .btn-icon.edit { color: var(--primary); }
+
+        .nav-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-radius: 24px; display: flex; justify-content: space-around; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; }
+        [data-theme="dark"] .nav-bar { background: rgba(31, 41, 55, 0.9); border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .nav-item { background: none; border: none; font-size: 0.7rem; color: var(--text-light); display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .nav-item.active { color: var(--primary); font-weight: 700; }
+        .nav-icon { font-size: 1.5rem; margin-bottom: 2px; }
+        
+        .fab { position: fixed; bottom: 100px; right: 20px; background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); z-index: 90; cursor: pointer; border: none; transition: transform 0.2s; }
+        .fab:hover { transform: scale(1.08); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 199; display: none; backdrop-filter: blur(2px); }
+        .modal-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; z-index: 200; transform: translateY(100%); transition: transform 0.3s; max-height: 90vh; overflow-y: auto; color: var(--text-main); }
+        .modal-sheet.active { transform: translateY(0); }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 0.9rem; }
+        textarea { resize: vertical; min-height: 60px; }
+        label { font-size: 0.85rem; font-weight: 600; color: var(--text-light); margin-bottom: 4px; display: block; }
+
+        .screen { display: none; opacity: 0; animation: fadeIn 0.3s forwards; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; color:var(--primary); transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(79, 70, 229, 0.2); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .search-bar { position: relative; margin-bottom: 15px; }
+        .search-bar input { padding-left: 40px; margin-bottom: 0; }
+        .search-bar i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 1.1rem; }
+
+        .card-actions { display: flex; gap: 4px; align-items: center; }
+
+        .alert-bar { background: var(--warning-bg); border: 1px solid var(--warning); color: var(--warning); padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.82rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .alert-bar i { font-size: 1.1rem; }
+
+        .tab-bar { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; }
+        .tab-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-light); font-size: 0.8rem; font-weight: 600; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 3rem; margin-bottom: 10px; display: block; opacity: 0.4; }
+        .empty-state p { font-size: 0.9rem; }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-120px); background: var(--surface); border: 1px solid var(--border); color: var(--text-main); padding: 12px 20px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 300; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+
+        .confirm-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 299; display: none; backdrop-filter: blur(2px); justify-content: center; align-items: center; }
+        .confirm-overlay.show { display: flex; }
+        .confirm-box { background: var(--surface); border-radius: 20px; padding: 28px; max-width: 340px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .confirm-box h3 { margin: 0 0 8px 0; font-size: 1.1rem; }
+        .confirm-box p { color: var(--text-light); font-size: 0.85rem; margin: 0 0 20px 0; }
+        .confirm-actions { display: flex; gap: 10px; }
+        .confirm-actions .btn { flex: 1; padding: 12px; }
+    </style>
+</head>
+<body>
+
+<div id="loader">
+    <div class="spinner"></div>
+    <div>Conectando ao Banco de Dados...</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="confirm-overlay" class="confirm-overlay">
+    <div class="confirm-box">
+        <h3 id="confirm-title">Confirmar</h3>
+        <p id="confirm-message">Tem certeza?</p>
+        <div class="confirm-actions">
+            <button class="btn btn-outline" onclick="window.closeConfirm()">Cancelar</button>
+            <button class="btn btn-danger" id="confirm-action-btn" onclick="">Excluir</button>
+        </div>
+    </div>
+</div>
+
+<header>
+    <div class="header-top">
+        <div>
+            <div class="subtitle">Gestão de Saúde</div>
+            <h1 id="page-title">Dashboard</h1>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="window.toggleTheme()" title="Alternar Tema">
+                <i id="theme-icon" class="ph ph-moon"></i>
+            </button>
+            <button class="icon-btn" onclick="window.navTo('settings')" title="Configurações">
+                <i class="ph ph-gear"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<div id="dashboard-filters" class="filter-bar">
+    <select id="filter-year" class="filter-select" onchange="window.renderDashboard()"></select>
+    <select id="filter-month" class="filter-select" onchange="window.renderDashboard()">
+        <option value="all">Mês: Todos</option>
+        <option value="0">Janeiro</option><option value="1">Fevereiro</option>
+        <option value="2">Março</option><option value="3">Abril</option>
+        <option value="4">Maio</option><option value="5">Junho</option>
+        <option value="6">Julho</option><option value="7">Agosto</option>
+        <option value="8">Setembro</option><option value="9">Outubro</option>
+        <option value="10">Novembro</option><option value="11">Dezembro</option>
+    </select>
+    <select id="filter-team" class="filter-select" onchange="window.renderDashboard()">
+        <option value="all">Equipe: Todas</option>
+    </select>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="screen-dashboard" class="screen active container" style="margin-top: 20px;">
+    <div id="alerts-area"></div>
+    <div id="report-area">
+        <div class="kpi-grid-3">
+            <div class="card" style="margin:0;">
+                <div class="card-info">Atestados</div>
+                <div class="card-metric-sm" id="kpi-total">0</div>
+            </div>
+            <div class="card" style="margin:0;">
+                <div class="card-info">Dias Perdidos</div>
+                <div class="card-metric-sm" id="kpi-days" style="color:var(--danger)">0</div>
+            </div>
+            <div class="card" style="margin:0;">
+                <div class="card-info">Taxa Absent.</div>
+                <div class="card-metric-sm" id="kpi-rate" style="color:var(--warning)">0%</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Evolução Anual</div>
+            <div class="card-info" id="evolution-subtitle">Atestados por período</div>
+            <div class="chart-container"><canvas id="chartEvolution"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Padrão Semanal</div>
+            <div class="card-info">Ocorrências por dia</div>
+            <div class="chart-container"><canvas id="chartWeekDay"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Comparativo por Equipe</div>
+            <div class="card-info">Total de atestados por equipe</div>
+            <div class="chart-container"><canvas id="chartTeam"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Ranking: Frequência</div>
+            <div class="card-info">Top 5 Colaboradores</div>
+            <div class="chart-container"><canvas id="chartRankingQty"></canvas></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">Ranking: Gravidade</div>
+            <div class="card-info">Top 5 Dias Afastados</div>
+            <div class="chart-container"><canvas id="chartRankingDays"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="ph ph-chart-pie"></i> Motivos Frequentes</div>
+            <div class="card-info">Top 5 CIDs / Motivos</div>
+            <div class="chart-container"><canvas id="chartReasons"></canvas></div>
+        </div>
+    </div>
+    <button class="btn btn-pdf no-print" onclick="window.generatePDF()">
+        <i class="ph ph-file-pdf"></i> Baixar Relatório PDF
+    </button>
+</div>
+
+<!-- ===== HISTÓRICO ===== -->
+<div id="screen-list" class="screen container" style="margin-top: 20px;">
+    <h3>Histórico de Atestados</h3>
+    <div class="search-bar">
+        <i class="ph ph-magnifying-glass"></i>
+        <input type="text" id="search-cert" placeholder="Buscar por nome, motivo ou data..." oninput="window.renderList()">
+    </div>
+    <div style="margin-bottom: 15px;">
+        <select id="filter-history-emp" onchange="window.renderList()" class="filter-select" style="width: 100%;">
+            <option value="all">Todos os Colaboradores</option>
+        </select>
+    </div>
+    
+    <div id="employee-report-area" style="display:none; margin-bottom: 20px;"></div>
+    <div id="list-summary" style="margin-bottom:15px; font-size:0.85rem; color:var(--primary); font-weight:600; display:none;"></div>
+    <div id="certificates-list"></div>
+    <button class="fab" onclick="window.openModal('certificate')"><i class="ph ph-plus"></i></button>
+</div>
+
+<!-- ===== EQUIPE ===== -->
+<div id="screen-team" class="screen container" style="margin-top: 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3>Colaboradores</h3>
+        <button class="btn btn-primary btn-sm" onclick="window.openModal('employee')"><i class="ph ph-user-plus"></i> Novo</button>
+    </div>
+    <div class="search-bar">
+        <i class="ph ph-magnifying-glass"></i>
+        <input type="text" id="search-emp" placeholder="Buscar colaborador..." oninput="window.renderTeam()">
+    </div>
+    <div id="employees-list"></div>
+</div>
+
+<!-- ===== CONFIGURAÇÕES ===== -->
+<div id="screen-settings" class="screen container" style="margin-top: 20px;">
+    <h3>Configurações</h3>
+    <div class="card">
+        <div class="card-title"><i class="ph ph-cloud-check"></i> Banco de Dados (Nuvem)</div>
+        <div class="card-info">Seus dados estão sincronizados com o Google Firebase.</div>
+        <div style="margin-top:10px; font-size:0.8rem; color:var(--success);">● Conectado Online</div>
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="ph ph-warning-circle"></i> Limite de Alertas</div>
+        <div class="card-info">Alertar quando um colaborador atingir este número de atestados no período filtrado.</div>
+        <input type="number" id="alert-threshold" min="1" value="3" style="margin-top:10px; width:80px;" onchange="window.saveSettings()">
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="ph ph-download-simple"></i> Exportar Dados</div>
+        <div class="card-info">Baixe uma cópia dos dados atuais.</div>
+        <button class="btn btn-primary" onclick="window.exportData()" style="margin-top:10px;">
+            <i class="ph ph-download-simple"></i> Baixar Backup (.json)
+        </button>
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="ph ph-upload-simple"></i> Importar Dados</div>
+        <div class="card-info">Restaure dados de um backup (.json).</div>
+        <input type="file" id="import-file" accept=".json" style="margin-top:10px;" onchange="window.importData(event)">
+    </div>
+    <div class="card" style="border-color:var(--danger);">
+        <div class="card-title" style="color:var(--danger);"><i class="ph ph-trash"></i> Zona de Perigo</div>
+        <div class="card-info">Excluir todos os registros. Esta ação não pode ser desfeita.</div>
+        <button class="btn btn-danger" onclick="window.confirmDeleteAll()" style="margin-top:10px;">
+            <i class="ph ph-trash"></i> Apagar Todos os Dados
+        </button>
+    </div>
+</div>
+
+<!-- ===== MODAIS ===== -->
+<div class="modal-overlay" id="modal-overlay" onclick="window.closeModal()"></div>
+<div class="modal-sheet" id="modal-sheet">
+    <div style="width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px auto;"></div>
+    <h2 id="modal-title">Novo Registro</h2>
+    
+    <div id="form-certificate" style="display:none;">
+        <input type="hidden" id="cert-edit-id">
+        <label>Colaborador</label><select id="cert-employee"></select>
+        <label>Data Início</label><input type="date" id="cert-date">
+        <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px;">
+            <div><label>Dias</label><input type="number" id="cert-days" min="1" value="1"></div>
+            <div><label>CID / Motivo</label><input type="text" id="cert-reason" placeholder="Ex: J11 - Gripe"></div>
+        </div>
+        <label>Observações</label>
+        <textarea id="cert-obs" placeholder="Observações adicionais (opcional)"></textarea>
+        <button class="btn btn-primary" id="btn-save-cert" onclick="window.saveCertificate()">
+            <i class="ph ph-floppy-disk"></i> Salvar
+        </button>
+    </div>
+
+    <div id="form-employee" style="display:none;">
+        <input type="hidden" id="emp-edit-id">
+        <label>Nome Completo</label><input type="text" id="emp-name" placeholder="Nome do colaborador">
+        <label>Matrícula</label><input type="text" id="emp-matricula" placeholder="Número da matrícula">
+        <label>Equipe</label><input type="text" id="emp-team" placeholder="Ex: 1, 2, A, B...">
+        <label>Cargo</label><input type="text" id="emp-cargo" placeholder="Cargo do colaborador">
+        <button class="btn btn-primary" id="btn-save-emp" onclick="window.saveEmployee()">
+            <i class="ph ph-floppy-disk"></i> Salvar
+        </button>
+    </div>
+</div>
+
+<nav class="nav-bar no-print">
+    <button class="nav-item active" onclick="window.navTo('dashboard')"><i class="ph ph-chart-pie-slice nav-icon"></i>Dash</button>
+    <button class="nav-item" onclick="window.navTo('list')"><i class="ph ph-list-dashes nav-icon"></i>Lista</button>
+    <button class="nav-item" onclick="window.navTo('team')"><i class="ph ph-users nav-icon"></i>Equipe</button>
+</nav>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjdyooWyI-7P6JKj3fH0A_6YNEUq1oRrc",
+      authDomain: "gestao-saude-e34a4.firebaseapp.com",
+      projectId: "gestao-saude-e34a4",
+      storageBucket: "gestao-saude-e34a4.firebasestorage.app",
+      messagingSenderId: "422347874022",
+      appId: "1:422347874022:web:f995779a9f62e6d51da527"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.localData = { employees: [], certificates: [] };
+    let charts = {};
+    let currentTheme = localStorage.getItem('appTheme') || 'light';
+    let alertThreshold = parseInt(localStorage.getItem('alertThreshold') || '3');
+
+    // ===== INIT =====
+    window.onload = () => {
+        setupListeners();
+        applyTheme(currentTheme);
+        document.getElementById('alert-threshold').value = alertThreshold;
+    };
+
+    // ===== TOAST =====
+    window.showToast = (msg, type = 'success') => {
+        const t = document.getElementById('toast');
+        t.className = `toast ${type}`;
+        t.innerHTML = `<i class="ph ph-${type === 'success' ? 'check-circle' : 'warning-circle'}"></i> ${msg}`;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    };
+
+    // ===== CONFIRM DIALOG =====
+    let confirmCallback = null;
+    window.showConfirm = (title, message, btnText, callback) => {
+        document.getElementById('confirm-title').innerText = title;
+        document.getElementById('confirm-message').innerText = message;
+        const btn = document.getElementById('confirm-action-btn');
+        btn.innerText = btnText;
+        btn.onclick = () => { callback(); window.closeConfirm(); };
+        document.getElementById('confirm-overlay').classList.add('show');
+    };
+    window.closeConfirm = () => {
+        document.getElementById('confirm-overlay').classList.remove('show');
+    };
+
+    // ===== REALTIME LISTENERS =====
+    function setupListeners() {
+        onSnapshot(collection(db, "employees"), (snapshot) => {
+            window.localData.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            refreshUI();
+        });
+
+        onSnapshot(collection(db, "certificates"), (snapshot) => {
+            window.localData.certificates = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            refreshUI();
+            const loader = document.getElementById('loader');
+            if(loader) { loader.style.opacity = '0'; setTimeout(()=>loader.remove(), 500); }
+        });
+    }
+
+    function refreshUI() {
+        initFilters();
+        const activeScreen = document.querySelector('.screen.active').id;
+        if(activeScreen === 'screen-dashboard') window.renderDashboard();
+        if(activeScreen === 'screen-list') { populateHistoryFilter(); window.renderList(); }
+        if(activeScreen === 'screen-team') window.renderTeam();
+    }
+
+    // ===== CRUD: EMPLOYEES =====
+    window.saveEmployee = async () => {
+        const editId = document.getElementById('emp-edit-id').value;
+        const name = document.getElementById('emp-name').value.trim();
+        const mat = document.getElementById('emp-matricula').value.trim();
+        const team = document.getElementById('emp-team').value.trim();
+        const cargo = document.getElementById('emp-cargo').value.trim();
+        if(!name) return window.showToast('Nome é obrigatório!', 'error');
+
+        const data = {
+            name, matricula: mat || "000", team: team || "1",
+            cargo: cargo || "", updatedAt: new Date().toISOString()
+        };
+
+        try {
+            if (editId) {
+                await updateDoc(doc(db, "employees", editId), data);
+                window.showToast('Colaborador atualizado!');
+            } else {
+                data.createdAt = new Date().toISOString();
+                await addDoc(collection(db, "employees"), data);
+                window.showToast('Colaborador cadastrado!');
+            }
+            window.closeModal();
+            clearEmpForm();
+        } catch (e) { window.showToast('Erro: ' + e.message, 'error'); }
+    };
+
+    window.editEmp = (id) => {
+        const emp = window.localData.employees.find(e => e.id === id);
+        if (!emp) return;
+        document.getElementById('emp-edit-id').value = id;
+        document.getElementById('emp-name').value = emp.name || '';
+        document.getElementById('emp-matricula').value = emp.matricula || '';
+        document.getElementById('emp-team').value = emp.team || '';
+        document.getElementById('emp-cargo').value = emp.cargo || '';
+        document.getElementById('modal-title').innerText = 'Editar Colaborador';
+        document.getElementById('btn-save-emp').innerHTML = '<i class="ph ph-floppy-disk"></i> Atualizar';
+        document.getElementById('form-certificate').style.display = 'none';
+        document.getElementById('form-employee').style.display = 'block';
+        document.getElementById('modal-overlay').style.display = 'block';
+        setTimeout(() => document.getElementById('modal-sheet').classList.add('active'), 10);
+    };
+
+    window.delEmp = (id) => {
+        const emp = window.localData.employees.find(e => e.id === id);
+        window.showConfirm('Excluir Colaborador', `Deseja excluir "${emp?.name || ''}"? Os atestados vinculados não serão removidos.`, 'Excluir', async () => {
+            try {
+                await deleteDoc(doc(db, "employees", id));
+                window.showToast('Colaborador excluído!');
+            } catch(e) { window.showToast('Erro: ' + e.message, 'error'); }
+        });
+    };
+
+    function clearEmpForm() {
+        document.getElementById('emp-edit-id').value = '';
+        document.getElementById('emp-name').value = '';
+        document.getElementById('emp-matricula').value = '';
+        document.getElementById('emp-team').value = '';
+        document.getElementById('emp-cargo').value = '';
+    }
+
+    // ===== CRUD: CERTIFICATES =====
+    window.saveCertificate = async () => {
+        const editId = document.getElementById('cert-edit-id').value;
+        const empId = document.getElementById('cert-employee').value;
+        const date = document.getElementById('cert-date').value;
+        const days = document.getElementById('cert-days').value;
+        const reason = document.getElementById('cert-reason').value.trim();
+        const obs = document.getElementById('cert-obs').value.trim();
+        if(!empId || !date || !days) return window.showToast('Preencha os campos obrigatórios!', 'error');
+
+        const data = {
+            empId, date, days: parseInt(days), reason, obs: obs || "",
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            if (editId) {
+                await updateDoc(doc(db, "certificates", editId), data);
+                window.showToast('Atestado atualizado!');
+            } else {
+                data.createdAt = new Date().toISOString();
+                await addDoc(collection(db, "certificates"), data);
+                window.showToast('Atestado lançado!');
+            }
+            window.closeModal();
+            clearCertForm();
+        } catch (e) { window.showToast('Erro: ' + e.message, 'error'); }
+    };
+
+    window.editCert = (id) => {
+        const cert = window.localData.certificates.find(c => c.id === id);
+        if (!cert) return;
+        document.getElementById('cert-edit-id').value = id;
+        document.getElementById('cert-date').value = cert.date || '';
+        document.getElementById('cert-days').value = cert.days || 1;
+        document.getElementById('cert-reason').value = cert.reason || '';
+        document.getElementById('cert-obs').value = cert.obs || '';
+        
+        const sel = document.getElementById('cert-employee');
+        sel.innerHTML = '';
+        window.localData.employees.sort((a,b) => a.name.localeCompare(b.name)).forEach(e => {
+            sel.innerHTML += `<option value="${e.id}" ${e.id === cert.empId ? 'selected' : ''}>${e.name}</option>`;
+        });
+
+        document.getElementById('modal-title').innerText = 'Editar Atestado';
+        document.getElementById('btn-save-cert').innerHTML = '<i class="ph ph-floppy-disk"></i> Atualizar';
+        document.getElementById('form-employee').style.display = 'none';
+        document.getElementById('form-certificate').style.display = 'block';
+        document.getElementById('modal-overlay').style.display = 'block';
+        setTimeout(() => document.getElementById('modal-sheet').classList.add('active'), 10);
+    };
+
+    window.delCert = (id) => {
+        window.showConfirm('Excluir Atestado', 'Deseja excluir este atestado? Esta ação não pode ser desfeita.', 'Excluir', async () => {
+            try {
+                await deleteDoc(doc(db, "certificates", id));
+                window.showToast('Atestado excluído!');
+            } catch(e) { window.showToast('Erro: ' + e.message, 'error'); }
+        });
+    };
+
+    function clearCertForm() {
+        document.getElementById('cert-edit-id').value = '';
+        document.getElementById('cert-reason').value = '';
+        document.getElementById('cert-days').value = '1';
+        document.getElementById('cert-obs').value = '';
+    }
+
+    // ===== MODAL =====
+    window.openModal = (type) => {
+        clearEmpForm();
+        clearCertForm();
+        document.getElementById('modal-overlay').style.display = 'block';
+        setTimeout(() => document.getElementById('modal-sheet').classList.add('active'), 10);
+        document.getElementById('form-certificate').style.display = type === 'certificate' ? 'block' : 'none';
+        document.getElementById('form-employee').style.display = type === 'employee' ? 'block' : 'none';
+        document.getElementById('modal-title').innerText = type === 'certificate' ? 'Lançar Atestado' : 'Novo Colaborador';
+        document.getElementById('btn-save-cert').innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar';
+        document.getElementById('btn-save-emp').innerHTML = '<i class="ph ph-floppy-disk"></i> Cadastrar';
+        if(type === 'certificate') {
+            const sel = document.getElementById('cert-employee'); sel.innerHTML = '';
+            window.localData.employees.sort((a,b) => a.name.localeCompare(b.name)).forEach(e => sel.innerHTML += `<option value="${e.id}">${e.name}</option>`);
+            document.getElementById('cert-date').valueAsDate = new Date();
+        }
+    };
+    window.closeModal = () => {
+        document.getElementById('modal-sheet').classList.remove('active');
+        setTimeout(() => document.getElementById('modal-overlay').style.display = 'none', 300);
+    };
+
+    // ===== NAVIGATION =====
+    window.navTo = (screenId) => {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('screen-' + screenId).classList.add('active');
+        document.getElementById('dashboard-filters').style.display = screenId === 'dashboard' ? 'flex' : 'none';
+        const map = { dashboard: 0, list: 1, team: 2, settings: 2 }; 
+        if(screenId !== 'settings') document.querySelectorAll('.nav-item')[map[screenId]].classList.add('active');
+        const titles = { dashboard: 'Dashboard', list: 'Histórico', team: 'Equipe', settings: 'Configurações' };
+        document.getElementById('page-title').innerText = titles[screenId];
+        refreshUI();
+    };
+
+    // ===== THEME =====
+    window.toggleTheme = () => applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+    function applyTheme(theme) {
+        currentTheme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('appTheme', theme);
+        document.getElementById('theme-icon').className = theme === 'light' ? 'ph ph-moon' : 'ph ph-sun';
+        const styles = getComputedStyle(document.body);
+        Chart.defaults.color = styles.getPropertyValue('--text-light').trim();
+        Chart.defaults.borderColor = styles.getPropertyValue('--border').trim();
+        if(document.getElementById('screen-dashboard').classList.contains('active')) window.renderDashboard();
+    }
+
+    // ===== SETTINGS =====
+    window.saveSettings = () => {
+        alertThreshold = parseInt(document.getElementById('alert-threshold').value) || 3;
+        localStorage.setItem('alertThreshold', alertThreshold);
+        window.showToast('Configuração salva!');
+    };
+
+    window.exportData = () => {
+        const a = document.createElement('a');
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.localData, null, 2));
+        a.download = `backup_saude_${new Date().toISOString().slice(0,10)}.json`; a.click();
+        window.showToast('Backup baixado!');
+    };
+
+    window.importData = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        window.showConfirm('Importar Dados', 'Isso adicionará os registros do backup. Dados existentes serão mantidos. Continuar?', 'Importar', async () => {
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                let countEmp = 0, countCert = 0;
+                if (data.employees) {
+                    for (const e of data.employees) {
+                        const { id, ...rest } = e;
+                        await addDoc(collection(db, "employees"), { ...rest, importedAt: new Date().toISOString() });
+                        countEmp++;
+                    }
+                }
+                if (data.certificates) {
+                    for (const c of data.certificates) {
+                        const { id, ...rest } = c;
+                        await addDoc(collection(db, "certificates"), { ...rest, importedAt: new Date().toISOString() });
+                        countCert++;
+                    }
+                }
+                window.showToast(`Importados: ${countEmp} colaboradores, ${countCert} atestados`);
+            } catch(e) { window.showToast('Erro ao importar: ' + e.message, 'error'); }
+        });
+    };
+
+    window.confirmDeleteAll = () => {
+        window.showConfirm('Apagar TUDO', 'Todos os colaboradores e atestados serão excluídos permanentemente. Tem certeza?', 'Apagar Tudo', async () => {
+            try {
+                const empSnap = await getDocs(collection(db, "employees"));
+                const certSnap = await getDocs(collection(db, "certificates"));
+                const batch = writeBatch(db);
+                empSnap.docs.forEach(d => batch.delete(d.ref));
+                certSnap.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                window.showToast('Todos os dados foram apagados.');
+            } catch(e) { window.showToast('Erro: ' + e.message, 'error'); }
+        });
+    };
+
+    // ===== FILTERS =====
+    function initFilters() {
+        const yearSel = document.getElementById('filter-year');
+        const teamSel = document.getElementById('filter-team');
+        const currentYearVal = yearSel.value;
+        const currentTeamVal = teamSel.value;
+        const currentYear = new Date().getFullYear();
+        const years = [...new Set(window.localData.certificates.map(c => new Date(c.date).getFullYear()))];
+        if(!years.includes(currentYear)) years.push(currentYear);
+        years.sort((a,b) => b-a);
+        yearSel.innerHTML = '';
+        years.forEach(y => yearSel.innerHTML += `<option value="${y}">${y}</option>`);
+        if(currentYearVal && years.includes(parseInt(currentYearVal))) yearSel.value = currentYearVal;
+        const teams = [...new Set(window.localData.employees.map(e => e.team))].filter(Boolean).sort();
+        teamSel.innerHTML = '<option value="all">Equipe: Todas</option>';
+        teams.forEach(t => teamSel.innerHTML += `<option value="${t}">TM ${t}</option>`);
+        if(currentTeamVal) teamSel.value = currentTeamVal;
+    }
+
+    function populateHistoryFilter() {
+        const sel = document.getElementById('filter-history-emp');
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="all">Todos os Colaboradores</option>';
+        [...window.localData.employees].sort((a,b) => a.name.localeCompare(b.name)).forEach(e => sel.innerHTML += `<option value="${e.id}">${e.name}</option>`);
+        sel.value = currentVal;
+    }
+
+    // ===== DASHBOARD =====
+    window.renderDashboard = () => {
+        const year = parseInt(document.getElementById('filter-year').value);
+        const month = document.getElementById('filter-month').value;
+        const team = document.getElementById('filter-team').value;
+        const monthName = document.getElementById('filter-month').options[document.getElementById('filter-month').selectedIndex].text;
+
+        const filteredData = window.localData.certificates.filter(c => {
+            const d = new Date(c.date + 'T12:00:00');
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            if(d.getFullYear() !== year) return false;
+            if(month !== 'all' && d.getMonth() != month) return false;
+            if(team !== 'all' && (!emp || emp.team != team)) return false;
+            return true;
+        });
+
+        const totalDays = filteredData.reduce((acc, c) => acc + parseInt(c.days||0), 0);
+        const empCount = window.localData.employees.length || 1;
+        const daysInPeriod = month !== 'all' ? 22 : 264; // avg work days
+        const absentRate = ((totalDays / (empCount * daysInPeriod)) * 100).toFixed(1);
+
+        document.getElementById('kpi-total').innerText = filteredData.length;
+        document.getElementById('kpi-days').innerText = totalDays;
+        document.getElementById('kpi-rate').innerText = absentRate + '%';
+        
+        let rangeText = `Ano ${year}`;
+        if(month !== 'all') rangeText += ` - ${monthName}`;
+        document.getElementById('evolution-subtitle').innerText = rangeText;
+
+        // Alerts
+        renderAlerts(filteredData);
+
+        // Charts
+        renderEvolutionChart(year, month, team);
+        renderWeekDayChart(filteredData);
+        renderRankingCharts(filteredData);
+        renderTeamChart(filteredData);
+        renderReasonsChart(filteredData);
+    };
+
+    function renderAlerts(filteredData) {
+        const area = document.getElementById('alerts-area');
+        area.innerHTML = '';
+        const empCounts = {};
+        filteredData.forEach(c => {
+            empCounts[c.empId] = (empCounts[c.empId] || 0) + 1;
+        });
+        const alerts = Object.entries(empCounts).filter(([_, count]) => count >= alertThreshold);
+        alerts.forEach(([empId, count]) => {
+            const emp = window.localData.employees.find(e => e.id === empId);
+            area.innerHTML += `<div class="alert-bar"><i class="ph ph-warning"></i> ${emp?.name || 'Desconhecido'} possui ${count} atestados no período!</div>`;
+        });
+    }
+
+    function renderEvolutionChart(year, selectedMonth, team) {
+        const dataYear = window.localData.certificates.filter(c => {
+            const d = new Date(c.date + 'T12:00:00');
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            return d.getFullYear() == year && (team === 'all' || (emp && emp.team == team));
+        });
+        const counts = Array(12).fill(0);
+        dataYear.forEach(c => counts[new Date(c.date + 'T12:00:00').getMonth()]++);
+        const ctx = document.getElementById('chartEvolution').getContext('2d');
+        if(charts.evolution) charts.evolution.destroy();
+        charts.evolution = new Chart(ctx, {
+            type: 'line',
+            data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+                datasets: [{ label: 'Atestados', data: counts, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4,
+                    pointRadius: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? 8 : 4,
+                    pointBackgroundColor: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? '#ef4444' : '#4f46e5'
+                }]
+            },
+            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales: { y: { beginAtZero: true, ticks: {precision:0} } } }
+        });
+    }
+
+    function renderWeekDayChart(data) {
+        const daysCount = [0,0,0,0,0,0,0];
+        data.forEach(c => { daysCount[new Date(c.date + 'T12:00:00').getDay()]++; });
+        const maxIdx = daysCount.indexOf(Math.max(...daysCount));
+        const bgColors = daysCount.map((_, i) => i === maxIdx ? '#ef4444' : (i === 0 || i === 6) ? 'rgba(209, 213, 219, 0.5)' : '#4f46e5');
+        const ctx = document.getElementById('chartWeekDay').getContext('2d');
+        if(charts.weekday) charts.weekday.destroy();
+        charts.weekday = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], datasets: [{ data: daysCount, backgroundColor: bgColors, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    }
+
+    function renderRankingCharts(data) {
+        let mapQty = {}, mapDays = {};
+        data.forEach(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            const name = emp ? emp.name.split(' ').slice(0,2).join(' ') : 'Desconhecido';
+            mapQty[name] = (mapQty[name] || 0) + 1;
+            mapDays[name] = (mapDays[name] || 0) + parseInt(c.days);
+        });
+        const topQty = Object.entries(mapQty).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        const topDays = Object.entries(mapDays).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+        if(charts.qty) charts.qty.destroy();
+        charts.qty = new Chart(document.getElementById('chartRankingQty'), {
+            type: 'bar', data: { labels: topQty.map(i=>i[0]), datasets:[{ data: topQty.map(i=>i[1]), backgroundColor:'#4f46e5', borderRadius:4 }] },
+            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+        });
+
+        if(charts.days) charts.days.destroy();
+        charts.days = new Chart(document.getElementById('chartRankingDays'), {
+            type: 'bar', data: { labels: topDays.map(i=>i[0]), datasets:[{ data: topDays.map(i=>i[1]), backgroundColor:'#ef4444', borderRadius:4 }] },
+            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+        });
+    }
+
+    function renderTeamChart(data) {
+        const teamMap = {};
+        data.forEach(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            const team = emp ? `TM ${emp.team}` : 'Sem Equipe';
+            teamMap[team] = (teamMap[team] || 0) + 1;
+        });
+        const sorted = Object.entries(teamMap).sort((a,b) => b[1] - a[1]);
+        const colors = ['#4f46e5','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+        if(charts.team) charts.team.destroy();
+        charts.team = new Chart(document.getElementById('chartTeam'), {
+            type: 'doughnut',
+            data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: colors.slice(0, sorted.length), borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 10 } } } }
+        });
+    }
+
+    function renderReasonsChart(data) {
+        const reasonMap = {};
+        data.forEach(c => {
+            const r = (c.reason || 'Não informado').toUpperCase().trim().substring(0, 30);
+            reasonMap[r] = (reasonMap[r] || 0) + 1;
+        });
+        const sorted = Object.entries(reasonMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+        const colors = ['#4f46e5','#7c3aed','#a855f7','#c084fc','#ddd6fe'];
+        if(charts.reasons) charts.reasons.destroy();
+        charts.reasons = new Chart(document.getElementById('chartReasons'), {
+            type: 'bar',
+            data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: colors, borderRadius: 4 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    }
+
+    // ===== LIST SCREEN =====
+    window.renderList = () => {
+        const list = document.getElementById('certificates-list');
+        const summary = document.getElementById('list-summary');
+        const reportArea = document.getElementById('employee-report-area');
+        const filterId = document.getElementById('filter-history-emp').value;
+        const searchTerm = (document.getElementById('search-cert').value || '').toLowerCase();
+        
+        list.innerHTML = '';
+        reportArea.innerHTML = ''; 
+
+        let data = [...window.localData.certificates];
+        data.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        // Search filter
+        if (searchTerm) {
+            data = data.filter(c => {
+                const emp = window.localData.employees.find(e => e.id == c.empId);
+                const empName = emp ? emp.name.toLowerCase() : '';
+                return empName.includes(searchTerm) || 
+                       (c.reason || '').toLowerCase().includes(searchTerm) ||
+                       (c.date || '').includes(searchTerm) ||
+                       (c.obs || '').toLowerCase().includes(searchTerm);
+            });
+        }
+
+        if(filterId !== 'all') {
+            data = data.filter(c => c.empId == filterId);
+            const emp = window.localData.employees.find(e => e.id == filterId);
+            
+            const stats = {};
+            data.forEach(c => {
+                const d = new Date(c.date + 'T12:00:00');
+                const year = d.getFullYear();
+                const month = d.getMonth();
+                if(!stats[year]) {
+                    stats[year] = { qtd: 0, dias: 0, months: Array.from({length:12}, () => ({qtd:0, dias:0})) };
+                }
+                stats[year].qtd++;
+                stats[year].dias += parseInt(c.days);
+                stats[year].months[month].qtd++;
+                stats[year].months[month].dias += parseInt(c.days);
+            });
+
+            reportArea.style.display = 'block';
+            summary.style.display = 'none';
+
+            let reportHTML = `
+                <div class="card" style="border: 1px solid var(--primary); background: var(--surface-2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed var(--border);">
+                        <div>
+                            <div class="card-title" style="color:var(--primary); font-size:1.1rem;">${emp ? emp.name : 'Colaborador'}</div>
+                            <div class="card-info">Matrícula: ${emp ? emp.matricula : '--'} | Equipe: TM ${emp ? emp.team : '--'}${emp && emp.cargo ? ' | ' + emp.cargo : ''}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="card-metric" style="font-size:1.4rem;">${data.length}</div>
+                            <div class="card-info">Total Geral</div>
+                        </div>
+                    </div>`;
+
+            Object.keys(stats).sort((a,b)=>b-a).forEach(year => {
+                const s = stats[year];
+                reportHTML += `
+                    <div style="background:var(--surface); padding:10px; border-radius:8px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.9rem; margin-bottom:8px; color:var(--text-main);">
+                            <span><i class="ph ph-calendar"></i> ${year}</span>
+                            <span style="color:var(--danger);">${s.qtd} Atestados (${s.dias} Dias)</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap:5px;">`;
+                const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                s.months.forEach((m, idx) => {
+                    if(m.qtd > 0) {
+                        reportHTML += `<div style="text-align:center; background:var(--bg); padding:4px; border-radius:4px; font-size:0.75rem;">
+                            <div style="font-weight:600; color:var(--text-light);">${monthNames[idx]}</div>
+                            <div style="font-weight:700; color:var(--text-main);">${m.qtd} (${m.dias}d)</div>
+                        </div>`;
+                    }
+                });
+                reportHTML += `</div></div>`;
+            });
+            reportHTML += `</div>`;
+            reportArea.innerHTML = reportHTML;
+        } else {
+            reportArea.style.display = 'none';
+            summary.style.display = 'none';
+        }
+
+        if (data.length === 0) {
+            list.innerHTML = `<div class="empty-state"><i class="ph ph-clipboard-text"></i><p>Nenhum atestado encontrado.</p></div>`;
+            return;
+        }
+
+        data.forEach(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            list.innerHTML += `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div style="flex:1;">
+                            <div class="card-title">${emp?emp.name:'Desconhecido'}</div>
+                            <div class="card-info"><i class="ph ph-calendar-blank"></i> ${new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="badge badge-red">${c.days} Dias</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; font-size:0.9rem; font-weight:500;">${c.reason || '<span style="color:var(--text-light)">Sem motivo</span>'}</div>
+                    ${c.obs ? `<div style="margin-top:4px; font-size:0.8rem; color:var(--text-light); font-style:italic;"><i class="ph ph-note"></i> ${c.obs}</div>` : ''}
+                    <div style="margin-top:10px; display:flex; gap:4px;">
+                        <button onclick="window.editCert('${c.id}')" class="btn-icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button onclick="window.delCert('${c.id}')" class="btn-icon danger" title="Excluir"><i class="ph ph-trash"></i></button>
+                    </div>
+                </div>`;
+        });
+    };
+
+    // ===== TEAM SCREEN =====
+    window.renderTeam = () => {
+        const list = document.getElementById('employees-list');
+        const searchTerm = (document.getElementById('search-emp').value || '').toLowerCase();
+        list.innerHTML = '';
+
+        let emps = [...window.localData.employees].sort((a,b) => a.name.localeCompare(b.name));
+
+        if (searchTerm) {
+            emps = emps.filter(e => 
+                e.name.toLowerCase().includes(searchTerm) || 
+                (e.matricula || '').toLowerCase().includes(searchTerm) ||
+                (e.cargo || '').toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (emps.length === 0) {
+            list.innerHTML = `<div class="empty-state"><i class="ph ph-users"></i><p>Nenhum colaborador encontrado.</p></div>`;
+            return;
+        }
+
+        emps.forEach(e => {
+            const certCount = window.localData.certificates.filter(c => c.empId === e.id).length;
+            const totalDays = window.localData.certificates.filter(c => c.empId === e.id).reduce((acc, c) => acc + parseInt(c.days || 0), 0);
+            list.innerHTML += `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div style="flex:1;">
+                            <div class="card-title">${e.name}</div>
+                            <div class="card-info">Matrícula: ${e.matricula}${e.cargo ? ' | ' + e.cargo : ''}</div>
+                        </div>
+                        <span class="badge badge-blue">TM ${e.team}</span>
+                    </div>
+                    <div style="margin-top:8px; display:flex; gap:16px; font-size:0.8rem; color:var(--text-light);">
+                        <span><i class="ph ph-clipboard-text"></i> ${certCount} atestado${certCount !== 1 ? 's' : ''}</span>
+                        <span><i class="ph ph-calendar-x"></i> ${totalDays} dia${totalDays !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style="margin-top:10px; display:flex; gap:4px;">
+                        <button onclick="window.editEmp('${e.id}')" class="btn-icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button onclick="window.delEmp('${e.id}')" class="btn-icon danger" title="Excluir"><i class="ph ph-trash"></i></button>
+                    </div>
+                </div>`;
+        });
+    };
+
+    // ===== PDF =====
+    window.generatePDF = () => {
+        const element = document.getElementById('report-area');
+        const btn = document.querySelector('.btn-pdf');
+        const wasDark = currentTheme === 'dark';
+        if(wasDark) applyTheme('light');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
+        setTimeout(() => {
+            const opt = { margin: 10, filename: `relatorio_saude_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                if(wasDark) applyTheme('dark');
+            });
+        }, 800);
+    };
+</script>
+</body>
+</html>
