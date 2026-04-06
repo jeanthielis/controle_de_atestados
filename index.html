@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
@@ -382,6 +383,10 @@
     let charts = {};
     let currentTheme = localStorage.getItem('appTheme') || 'light';
     let alertThreshold = parseInt(localStorage.getItem('alertThreshold') || '3');
+
+    // Register datalabels plugin
+    Chart.register(ChartDataLabels);
+    Chart.defaults.plugins.datalabels = { display: false };
 
     // ===== INIT =====
     window.onload = () => {
@@ -768,7 +773,7 @@
                     pointBackgroundColor: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? '#ef4444' : '#4f46e5'
                 }]
             },
-            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales: { y: { beginAtZero: true, ticks: {precision:0} } } }
+            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{ display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, anchor:'end', align:'top', font:{weight:'bold',size:11}, color: '#4f46e5' }}, scales: { y: { beginAtZero: true, ticks: {precision:0} } } }
         });
     }
 
@@ -782,7 +787,7 @@
         charts.weekday = new Chart(ctx, {
             type: 'bar',
             data: { labels: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], datasets: [{ data: daysCount, backgroundColor: bgColors, borderRadius: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, anchor: 'end', align: 'top', font: { weight: 'bold', size: 12 }, color: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex] === '#ef4444' ? '#ef4444' : '#4f46e5' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
         });
     }
 
@@ -800,13 +805,13 @@
         if(charts.qty) charts.qty.destroy();
         charts.qty = new Chart(document.getElementById('chartRankingQty'), {
             type: 'bar', data: { labels: topQty.map(i=>i[0]), datasets:[{ data: topQty.map(i=>i[1]), backgroundColor:'#4f46e5', borderRadius:4 }] },
-            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{ display:true, anchor:'end', align:'end', font:{weight:'bold',size:12}, color:'#4f46e5' }} }
         });
 
         if(charts.days) charts.days.destroy();
         charts.days = new Chart(document.getElementById('chartRankingDays'), {
             type: 'bar', data: { labels: topDays.map(i=>i[0]), datasets:[{ data: topDays.map(i=>i[1]), backgroundColor:'#ef4444', borderRadius:4 }] },
-            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+            options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{ display:true, anchor:'end', align:'end', font:{weight:'bold',size:12}, color:'#ef4444' }} }
         });
     }
 
@@ -823,7 +828,7 @@
         charts.team = new Chart(document.getElementById('chartTeam'), {
             type: 'doughnut',
             data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: colors.slice(0, sorted.length), borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 10 } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 10 } }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 13 }, formatter: (value, ctx) => { const total = ctx.dataset.data.reduce((a,b) => a+b, 0); const pct = ((value/total)*100).toFixed(0); return value > 0 ? `${value}\n(${pct}%)` : ''; }, textAlign: 'center' } } }
         });
     }
 
@@ -839,7 +844,7 @@
         charts.reasons = new Chart(document.getElementById('chartReasons'), {
             type: 'bar',
             data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: colors, borderRadius: 4 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'end', font: { weight: 'bold', size: 12 }, color: '#7c3aed' } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
         });
     }
 
