@@ -339,6 +339,11 @@
     <select id="filter-team" class="filter-select" onchange="window.renderDashboard()">
         <option value="all">Equipe: Todas</option>
     </select>
+    <select id="filter-escala" class="filter-select" onchange="window.renderDashboard()">
+        <option value="all">Escala: Todas</option>
+        <option value="ADM">ADM</option>
+        <option value="12x36">12x36</option>
+    </select>
 </div>
 
 <!-- ===== DASHBOARD ===== -->
@@ -358,6 +363,12 @@
                 <div class="card-info">Taxa Absent.</div>
                 <div class="card-metric-sm" id="kpi-rate" style="color:var(--warning)">0%</div>
             </div>
+        </div>
+
+        <div class="card" id="card-escala-breakdown">
+            <div class="card-title"><i class="ph ph-clock"></i> Absenteísmo por Escala</div>
+            <div class="card-info">Taxa calculada com os dias/turnos programados de cada regime</div>
+            <div id="escala-breakdown-body" style="margin-top:12px;"></div>
         </div>
 
         <div class="card">
@@ -447,6 +458,20 @@
         <input type="number" id="alert-threshold" min="1" value="3" style="margin-top:10px; width:80px;" onchange="window.saveSettings()">
     </div>
     <div class="card">
+        <div class="card-title"><i class="ph ph-calculator"></i> Parâmetros de Absenteísmo</div>
+        <div class="card-info">Quantidade de dias/turnos programados por mês, usada para calcular a taxa de absenteísmo de cada escala.</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+            <div>
+                <label style="margin-bottom:6px;">Dias úteis ADM (mês)</label>
+                <input type="number" id="workdays-adm" min="1" value="22" onchange="window.saveSettings()">
+            </div>
+            <div>
+                <label style="margin-bottom:6px;">Turnos 12x36 (mês)</label>
+                <input type="number" id="workdays-12x36" min="1" value="15" onchange="window.saveSettings()">
+            </div>
+        </div>
+    </div>
+    <div class="card">
         <div class="card-title"><i class="ph ph-download-simple"></i> Exportar Dados</div>
         <div class="card-info">Baixe uma cópia dos dados atuais.</div>
         <button class="btn btn-primary" onclick="window.exportData()" style="margin-top:10px;">
@@ -493,6 +518,12 @@
         <label>Nome Completo</label><input type="text" id="emp-name" placeholder="Nome do colaborador">
         <label>Matrícula</label><input type="text" id="emp-matricula" placeholder="Número da matrícula">
         <label>Equipe</label><input type="text" id="emp-team" placeholder="Ex: 1, 2, A, B...">
+        <label>Escala de Trabalho</label>
+        <select id="emp-escala">
+            <option value="ADM">ADM (Administrativo)</option>
+            <option value="12x36">12x36</option>
+            <option value="Outra">Outra</option>
+        </select>
         <label>Cargo</label><input type="text" id="emp-cargo" placeholder="Cargo do colaborador">
         <button class="btn btn-primary" id="btn-save-emp" onclick="window.saveEmployee()">
             <i class="ph ph-floppy-disk"></i> Salvar
@@ -526,6 +557,8 @@
     let charts = {};
     let currentTheme = localStorage.getItem('appTheme') || 'light';
     let alertThreshold = parseInt(localStorage.getItem('alertThreshold') || '3');
+    let workdaysADM = parseInt(localStorage.getItem('workdaysADM') || '22');
+    let workdays12x36 = parseInt(localStorage.getItem('workdays12x36') || '15');
 
     // Register datalabels plugin
     Chart.register(ChartDataLabels);
@@ -536,6 +569,8 @@
         setupListeners();
         applyTheme(currentTheme);
         document.getElementById('alert-threshold').value = alertThreshold;
+        document.getElementById('workdays-adm').value = workdaysADM;
+        document.getElementById('workdays-12x36').value = workdays12x36;
     };
 
     // ===== TOAST =====
@@ -590,11 +625,12 @@
         const name = document.getElementById('emp-name').value.trim();
         const mat = document.getElementById('emp-matricula').value.trim();
         const team = document.getElementById('emp-team').value.trim();
+        const escala = document.getElementById('emp-escala').value;
         const cargo = document.getElementById('emp-cargo').value.trim();
         if(!name) return window.showToast('Nome é obrigatório!', 'error');
 
         const data = {
-            name, matricula: mat || "000", team: team || "1",
+            name, matricula: mat || "000", team: team || "1", escala: escala || "ADM",
             cargo: cargo || "", updatedAt: new Date().toISOString()
         };
 
@@ -619,6 +655,7 @@
         document.getElementById('emp-name').value = emp.name || '';
         document.getElementById('emp-matricula').value = emp.matricula || '';
         document.getElementById('emp-team').value = emp.team || '';
+        document.getElementById('emp-escala').value = emp.escala || 'ADM';
         document.getElementById('emp-cargo').value = emp.cargo || '';
         document.getElementById('modal-title').innerText = 'Editar Colaborador';
         document.getElementById('btn-save-emp').innerHTML = '<i class="ph ph-floppy-disk"></i> Atualizar';
@@ -643,6 +680,7 @@
         document.getElementById('emp-name').value = '';
         document.getElementById('emp-matricula').value = '';
         document.getElementById('emp-team').value = '';
+        document.getElementById('emp-escala').value = 'ADM';
         document.getElementById('emp-cargo').value = '';
     }
 
@@ -737,7 +775,7 @@
     };
 
     // ===== NAVIGATION =====
-    window.navTo = (screenId) => {
+    window.navTo = (screenId, empFilterId) => {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         document.getElementById('screen-' + screenId).classList.add('active');
@@ -747,6 +785,12 @@
         const titles = { dashboard: 'Dashboard', list: 'Histórico', team: 'Equipe', settings: 'Configurações' };
         document.getElementById('page-title').innerText = titles[screenId];
         refreshUI();
+        // Se veio de "Ver histórico" de um colaborador específico, já aplica o filtro na tela de Histórico
+        if(screenId === 'list' && empFilterId) {
+            document.getElementById('search-cert').value = '';
+            document.getElementById('filter-history-emp').value = empFilterId;
+            window.renderList();
+        }
     };
 
     // ===== THEME =====
@@ -766,6 +810,11 @@
     window.saveSettings = () => {
         alertThreshold = parseInt(document.getElementById('alert-threshold').value) || 3;
         localStorage.setItem('alertThreshold', alertThreshold);
+        workdaysADM = parseInt(document.getElementById('workdays-adm').value) || 22;
+        localStorage.setItem('workdaysADM', workdaysADM);
+        workdays12x36 = parseInt(document.getElementById('workdays-12x36').value) || 15;
+        localStorage.setItem('workdays12x36', workdays12x36);
+        window.renderDashboard();
         window.showToast('Configuração salva!');
     };
 
@@ -845,30 +894,45 @@
     }
 
     // ===== DASHBOARD =====
+    // Retorna quantos dias/turnos um colaborador tem programados no período (mês ou ano) de acordo com a escala dele
+    function getScheduledDays(escala, month) {
+        const perMonth = (escala === '12x36') ? workdays12x36 : workdaysADM;
+        return month !== 'all' ? perMonth : perMonth * 12;
+    }
+
     window.renderDashboard = () => {
         const year = parseInt(document.getElementById('filter-year').value);
         const month = document.getElementById('filter-month').value;
         const team = document.getElementById('filter-team').value;
+        const escalaFilter = document.getElementById('filter-escala').value;
         const monthName = document.getElementById('filter-month').options[document.getElementById('filter-month').selectedIndex].text;
+
+        // Colaboradores que entram no denominador (respeitando filtro de equipe e escala)
+        const filteredEmployees = window.localData.employees.filter(e => {
+            if(team !== 'all' && e.team != team) return false;
+            if(escalaFilter !== 'all' && (e.escala || 'ADM') != escalaFilter) return false;
+            return true;
+        });
+        const filteredEmpIds = new Set(filteredEmployees.map(e => e.id));
 
         const filteredData = window.localData.certificates.filter(c => {
             const d = new Date(c.date + 'T12:00:00');
-            const emp = window.localData.employees.find(e => e.id == c.empId);
             if(d.getFullYear() !== year) return false;
             if(month !== 'all' && d.getMonth() != month) return false;
-            if(team !== 'all' && (!emp || emp.team != team)) return false;
-            return true;
+            return filteredEmpIds.has(c.empId);
         });
 
         const totalDays = filteredData.reduce((acc, c) => acc + parseInt(c.days||0), 0);
-        const empCount = window.localData.employees.length || 1;
-        const daysInPeriod = month !== 'all' ? 22 : 264; // avg work days
-        const absentRate = ((totalDays / (empCount * daysInPeriod)) * 100).toFixed(1);
+
+        // Denominador correto: soma dos dias/turnos programados de CADA colaborador, de acordo com a escala dele
+        // (em vez de usar um único valor genérico para todo mundo, o que distorce o indicador em equipes mistas)
+        const totalScheduled = filteredEmployees.reduce((acc, e) => acc + getScheduledDays(e.escala || 'ADM', month), 0) || 1;
+        const absentRate = ((totalDays / totalScheduled) * 100).toFixed(1);
 
         document.getElementById('kpi-total').innerText = filteredData.length;
         document.getElementById('kpi-days').innerText = totalDays;
         document.getElementById('kpi-rate').innerText = absentRate + '%';
-        
+
         let rangeText = `Ano ${year}`;
         if(month !== 'all') rangeText += ` - ${monthName}`;
         document.getElementById('evolution-subtitle').innerText = rangeText;
@@ -876,13 +940,58 @@
         // Alerts
         renderAlerts(filteredData);
 
+        // Quebra da taxa de absenteísmo por escala
+        renderEscalaBreakdown(filteredData, filteredEmployees, month);
+
         // Charts
-        renderEvolutionChart(year, month, team);
+        renderEvolutionChart(year, month, team, escalaFilter);
         renderWeekDayChart(filteredData);
         renderRankingCharts(filteredData);
         renderTeamChart(filteredData);
         renderReasonsChart(filteredData);
     };
+
+    function renderEscalaBreakdown(filteredData, filteredEmployees, month) {
+        const body = document.getElementById('escala-breakdown-body');
+        if(!body) return;
+
+        const groups = {};
+        filteredEmployees.forEach(e => {
+            const esc = e.escala || 'ADM';
+            if(!groups[esc]) groups[esc] = { empIds: new Set(), scheduled: 0, qtd: 0, dias: 0 };
+            groups[esc].empIds.add(e.id);
+            groups[esc].scheduled += getScheduledDays(esc, month);
+        });
+
+        filteredData.forEach(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            const esc = emp ? (emp.escala || 'ADM') : 'ADM';
+            if(!groups[esc]) groups[esc] = { empIds: new Set(), scheduled: 0, qtd: 0, dias: 0 };
+            groups[esc].qtd++;
+            groups[esc].dias += parseInt(c.days || 0);
+        });
+
+        const order = ['ADM', '12x36', 'Outra'];
+        const keys = Object.keys(groups).sort((a,b) => order.indexOf(a) - order.indexOf(b));
+
+        if(keys.length === 0) {
+            body.innerHTML = `<div class="card-info">Nenhum colaborador cadastrado.</div>`;
+            return;
+        }
+
+        body.innerHTML = keys.map(k => {
+            const g = groups[k];
+            const rate = g.scheduled > 0 ? ((g.dias / g.scheduled) * 100).toFixed(1) : '0.0';
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                        <span class="badge badge-blue">${k}</span>
+                        <span style="font-size:0.8rem; color:var(--text-light); margin-left:6px;">${g.empIds.size} colab. · ${g.qtd} atestado${g.qtd !== 1 ? 's' : ''} · ${g.dias} dia${g.dias !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style="font-weight:700; font-size:1.1rem; color:var(--warning);">${rate}%</div>
+                </div>`;
+        }).join('');
+    }
 
     function renderAlerts(filteredData) {
         const area = document.getElementById('alerts-area');
@@ -898,11 +1007,14 @@
         });
     }
 
-    function renderEvolutionChart(year, selectedMonth, team) {
+    function renderEvolutionChart(year, selectedMonth, team, escalaFilter) {
         const dataYear = window.localData.certificates.filter(c => {
             const d = new Date(c.date + 'T12:00:00');
             const emp = window.localData.employees.find(e => e.id == c.empId);
-            return d.getFullYear() == year && (team === 'all' || (emp && emp.team == team));
+            if(d.getFullYear() != year) return false;
+            if(team !== 'all' && (!emp || emp.team != team)) return false;
+            if(escalaFilter && escalaFilter !== 'all' && (!emp || (emp.escala || 'ADM') != escalaFilter)) return false;
+            return true;
         });
         const counts = Array(12).fill(0);
         dataYear.forEach(c => counts[new Date(c.date + 'T12:00:00').getMonth()]++);
@@ -1131,24 +1243,33 @@
             const certCount = window.localData.certificates.filter(c => c.empId === e.id).length;
             const totalDays = window.localData.certificates.filter(c => c.empId === e.id).reduce((acc, c) => acc + parseInt(c.days || 0), 0);
             list.innerHTML += `
-                <div class="card">
+                <div class="card" style="cursor:pointer;" onclick="window.viewEmployeeHistory('${e.id}')" title="Clique para ver o histórico completo">
                     <div style="display:flex; justify-content:space-between; align-items:start;">
                         <div style="flex:1;">
                             <div class="card-title">${e.name}</div>
                             <div class="card-info">Matrícula: ${e.matricula}${e.cargo ? ' | ' + e.cargo : ''}</div>
                         </div>
-                        <span class="badge badge-blue">TM ${e.team}</span>
+                        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+                            <span class="badge badge-blue">TM ${e.team}</span>
+                            <span class="badge ${(e.escala || 'ADM') === '12x36' ? 'badge-warning' : 'badge-green'}">${e.escala || 'ADM'}</span>
+                        </div>
                     </div>
                     <div style="margin-top:8px; display:flex; gap:16px; font-size:0.8rem; color:var(--text-light);">
                         <span><i class="ph ph-clipboard-text"></i> ${certCount} atestado${certCount !== 1 ? 's' : ''}</span>
                         <span><i class="ph ph-calendar-x"></i> ${totalDays} dia${totalDays !== 1 ? 's' : ''}</span>
                     </div>
                     <div style="margin-top:10px; display:flex; gap:4px;">
-                        <button onclick="window.editEmp('${e.id}')" class="btn-icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                        <button onclick="window.delEmp('${e.id}')" class="btn-icon danger" title="Excluir"><i class="ph ph-trash"></i></button>
+                        <button onclick="event.stopPropagation(); window.editEmp('${e.id}')" class="btn-icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                        <button onclick="event.stopPropagation(); window.delEmp('${e.id}')" class="btn-icon danger" title="Excluir"><i class="ph ph-trash"></i></button>
+                        <span style="margin-left:auto; color:var(--primary); font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:4px;">Ver histórico <i class="ph ph-caret-right"></i></span>
                     </div>
                 </div>`;
         });
+    };
+
+    // Abre a tela de Histórico já filtrada para um colaborador específico (dashboard individual)
+    window.viewEmployeeHistory = (empId) => {
+        window.navTo('list', empId);
     };
 
     // ===== PDF =====
