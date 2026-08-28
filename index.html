@@ -315,6 +315,10 @@
             <h1 id="page-title">Dashboard</h1>
         </div>
         <div class="header-actions">
+            <button class="icon-btn" onclick="window.toggleNotifPanel()" title="Notificações" style="position:relative;">
+                <i class="ph ph-bell"></i>
+                <span id="notif-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:0.65rem; align-items:center; justify-content:center; font-weight:700;"></span>
+            </button>
             <button class="icon-btn" onclick="window.toggleTheme()" title="Alternar Tema">
                 <i id="theme-icon" class="ph ph-moon"></i>
             </button>
@@ -324,6 +328,16 @@
         </div>
     </div>
 </header>
+
+<div class="modal-overlay" id="notif-overlay" onclick="window.toggleNotifPanel()"></div>
+<div class="modal-sheet" id="notif-sheet">
+    <div style="width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px auto;"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">Notificações</h2>
+        <button class="btn btn-outline btn-sm" onclick="window.clearAllNotifications()">Limpar todas</button>
+    </div>
+    <div id="notif-list"></div>
+</div>
 
 <div id="dashboard-filters" class="filter-bar">
     <select id="filter-year" class="filter-select" onchange="window.renderDashboard()"></select>
@@ -348,7 +362,6 @@
 
 <!-- ===== DASHBOARD ===== -->
 <div id="screen-dashboard" class="screen active container" style="margin-top: 20px;">
-    <div id="alerts-area"></div>
     <div id="report-area">
         <div class="kpi-grid-3">
             <div class="card" style="margin:0;">
@@ -365,16 +378,34 @@
             </div>
         </div>
 
+        <div class="card" id="card-today-absent">
+            <div class="card-title"><i class="ph ph-user-minus"></i> Afastados Hoje</div>
+            <div class="card-info" id="today-absent-subtitle">Colaboradores com atestado vigente na data de hoje</div>
+            <div id="today-absent-body" style="margin-top:12px;"></div>
+        </div>
+
         <div class="card" id="card-escala-breakdown">
             <div class="card-title"><i class="ph ph-clock"></i> Absenteísmo por Escala</div>
             <div class="card-info">Taxa calculada com os dias/turnos programados de cada regime</div>
             <div id="escala-breakdown-body" style="margin-top:12px;"></div>
         </div>
 
+        <div class="card" id="card-assiduidade">
+            <div class="card-title"><i class="ph ph-medal"></i> Destaque: Assiduidade</div>
+            <div class="card-info">Colaboradores sem nenhum atestado no período filtrado</div>
+            <div id="assiduidade-body" style="margin-top:12px;"></div>
+        </div>
+
         <div class="card">
             <div class="card-title">Evolução Anual</div>
             <div class="card-info" id="evolution-subtitle">Atestados por período</div>
             <div class="chart-container"><canvas id="chartEvolution"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Comparativo Entre Anos</div>
+            <div class="card-info">Total de atestados e dias, por ano (todos os anos)</div>
+            <div class="chart-container"><canvas id="chartYearCompare"></canvas></div>
         </div>
 
         <div class="card">
@@ -387,6 +418,12 @@
             <div class="card-title">Comparativo por Equipe</div>
             <div class="card-info">Total de atestados por equipe</div>
             <div class="chart-container"><canvas id="chartTeam"></canvas></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="ph ph-tag"></i> Por Tipo de Afastamento</div>
+            <div class="card-info">Atestado, falta, CAT, licença...</div>
+            <div class="chart-container"><canvas id="chartTipos"></canvas></div>
         </div>
 
         <div class="card">
@@ -453,9 +490,17 @@
         <div style="margin-top:10px; font-size:0.8rem; color:var(--success);">● Conectado Online</div>
     </div>
     <div class="card">
-        <div class="card-title"><i class="ph ph-warning-circle"></i> Limite de Alertas</div>
-        <div class="card-info">Alertar quando um colaborador atingir este número de atestados no período filtrado.</div>
+        <div class="card-title"><i class="ph ph-bell-ringing"></i> Notificações: Limite de Atestados</div>
+        <div class="card-info">Gerar notificação quando um colaborador atingir este número de atestados no ano corrente.</div>
         <input type="number" id="alert-threshold" min="1" value="3" style="margin-top:10px; width:80px;" onchange="window.saveSettings()">
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="ph ph-target"></i> Meta de Absenteísmo</div>
+        <div class="card-info">A "Taxa Absent." do dashboard fica verde dentro da meta e vermelha quando ultrapassada.</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+            <input type="number" id="meta-absenteismo" min="0" step="0.1" value="3" style="width:80px; margin-bottom:0;" onchange="window.saveSettings()">
+            <span style="color:var(--text-light); font-size:0.9rem;">%</span>
+        </div>
     </div>
     <div class="card">
         <div class="card-title"><i class="ph ph-calculator"></i> Parâmetros de Absenteísmo</div>
@@ -476,6 +521,9 @@
         <div class="card-info">Baixe uma cópia dos dados atuais.</div>
         <button class="btn btn-primary" onclick="window.exportData()" style="margin-top:10px;">
             <i class="ph ph-download-simple"></i> Baixar Backup (.json)
+        </button>
+        <button class="btn btn-outline" onclick="window.exportCSV()" style="margin-top:10px;">
+            <i class="ph ph-file-xls"></i> Exportar Atestados (.csv / Excel)
         </button>
     </div>
     <div class="card">
@@ -501,13 +549,33 @@
     <div id="form-certificate" style="display:none;">
         <input type="hidden" id="cert-edit-id">
         <label>Colaborador</label><select id="cert-employee"></select>
-        <label>Data Início</label><input type="date" id="cert-date">
+        <label>Tipo de Afastamento</label>
+        <select id="cert-tipo">
+            <option value="Atestado Médico">Atestado Médico</option>
+            <option value="Falta Injustificada">Falta Injustificada</option>
+            <option value="CAT (Acidente de Trabalho)">CAT (Acidente de Trabalho)</option>
+            <option value="Licença">Licença</option>
+            <option value="Folga Compensatória">Folga Compensatória</option>
+            <option value="Outro">Outro</option>
+        </select>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div><label>Data Início</label><input type="date" id="cert-date" onchange="window.recalcCertDays()"></div>
+            <div><label>Data Fim (opcional)</label><input type="date" id="cert-end-date" onchange="window.recalcCertDays()"></div>
+        </div>
         <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px;">
             <div><label>Dias</label><input type="number" id="cert-days" min="1" value="1"></div>
             <div><label>CID / Motivo</label><input type="text" id="cert-reason" placeholder="Ex: J11 - Gripe"></div>
         </div>
         <label>Observações</label>
         <textarea id="cert-obs" placeholder="Observações adicionais (opcional)"></textarea>
+        <label>Anexo (foto ou PDF do atestado, opcional)</label>
+        <input type="file" id="cert-attachment" accept="image/*,application/pdf">
+        <div id="cert-attachment-current" style="display:none; margin:-8px 0 15px 0; font-size:0.85rem;">
+            <a href="#" id="cert-attachment-link" target="_blank" style="color:var(--primary); font-weight:600;"><i class="ph ph-paperclip"></i> Ver anexo atual</a>
+            <label style="display:inline-flex; align-items:center; gap:4px; margin-left:12px; font-weight:400; font-size:0.85rem;">
+                <input type="checkbox" id="cert-remove-attachment" style="width:auto; margin:0;"> remover anexo
+            </label>
+        </div>
         <button class="btn btn-primary" id="btn-save-cert" onclick="window.saveCertificate()">
             <i class="ph ph-floppy-disk"></i> Salvar
         </button>
@@ -540,6 +608,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCjdyooWyI-7P6JKj3fH0A_6YNEUq1oRrc",
@@ -552,6 +621,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
     window.localData = { employees: [], certificates: [] };
     let charts = {};
@@ -559,6 +629,9 @@
     let alertThreshold = parseInt(localStorage.getItem('alertThreshold') || '3');
     let workdaysADM = parseInt(localStorage.getItem('workdaysADM') || '22');
     let workdays12x36 = parseInt(localStorage.getItem('workdays12x36') || '15');
+    let metaAbsenteismo = parseFloat(localStorage.getItem('metaAbsenteismo') || '3');
+    let dismissedNotifications = JSON.parse(localStorage.getItem('dismissedNotifications') || '[]');
+
 
     // Register datalabels plugin
     Chart.register(ChartDataLabels);
@@ -571,6 +644,7 @@
         document.getElementById('alert-threshold').value = alertThreshold;
         document.getElementById('workdays-adm').value = workdaysADM;
         document.getElementById('workdays-12x36').value = workdays12x36;
+        document.getElementById('meta-absenteismo').value = metaAbsenteismo;
     };
 
     // ===== TOAST =====
@@ -596,6 +670,117 @@
         document.getElementById('confirm-overlay').classList.remove('show');
     };
 
+    // ===== NOTIFICAÇÕES =====
+    // Motor central de notificações. Diferente dos alertas antigos (que dependiam do filtro
+    // do dashboard e sumiam ao trocar o filtro), aqui as notificações são calculadas sobre
+    // regras fixas e ficam disponíveis no sino do cabeçalho até serem dispensadas.
+    function computeNotifications() {
+        const notifs = [];
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const sixMonthsAgo = new Date(now); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        // Regra 1: limite de atestados no ano corrente
+        const countsYear = {};
+        window.localData.certificates.forEach(c => {
+            const d = new Date(c.date + 'T12:00:00');
+            if(d.getFullYear() !== currentYear) return;
+            countsYear[c.empId] = (countsYear[c.empId] || 0) + 1;
+        });
+        Object.entries(countsYear).forEach(([empId, count]) => {
+            if(count >= alertThreshold) {
+                const emp = window.localData.employees.find(e => e.id === empId);
+                notifs.push({
+                    id: `limite-${empId}-${currentYear}`,
+                    severity: 'danger',
+                    icon: 'ph-warning',
+                    message: `${emp ? emp.name : 'Colaborador desconhecido'} atingiu ${count} atestados em ${currentYear}.`
+                });
+            }
+        });
+
+        // Regra 2: reincidência do mesmo motivo/CID (3x ou mais) nos últimos 6 meses
+        const reasonCounts = {};
+        window.localData.certificates.forEach(c => {
+            const d = new Date(c.date + 'T12:00:00');
+            if(d < sixMonthsAgo) return;
+            const motivo = (c.reason || '').trim().toUpperCase();
+            if(!motivo) return;
+            const key = `${c.empId}|${motivo}`;
+            reasonCounts[key] = (reasonCounts[key] || 0) + 1;
+        });
+        Object.entries(reasonCounts).forEach(([key, count]) => {
+            if(count >= 3) {
+                const [empId, motivo] = key.split('|');
+                const emp = window.localData.employees.find(e => e.id === empId);
+                notifs.push({
+                    id: `reincidencia-${key}`,
+                    severity: 'warning',
+                    icon: 'ph-repeat',
+                    message: `${emp ? emp.name : 'Colaborador desconhecido'} repetiu o motivo "${motivo}" ${count}x nos últimos 6 meses. Considere encaminhar para a saúde ocupacional.`
+                });
+            }
+        });
+
+        return notifs;
+    }
+
+    function updateNotifications() {
+        const all = computeNotifications();
+        const visible = all.filter(n => !dismissedNotifications.includes(n.id));
+        const badge = document.getElementById('notif-badge');
+        if(visible.length > 0) {
+            badge.style.display = 'flex';
+            badge.innerText = visible.length > 9 ? '9+' : visible.length;
+        } else {
+            badge.style.display = 'none';
+        }
+
+        const list = document.getElementById('notif-list');
+        if(!list) return;
+        if(visible.length === 0) {
+            list.innerHTML = `<div class="empty-state"><i class="ph ph-bell-slash"></i><p>Nenhuma notificação no momento.</p></div>`;
+            return;
+        }
+        list.innerHTML = visible.map(n => `
+            <div class="card" style="margin-bottom:10px; border-left:4px solid var(--${n.severity});">
+                <div style="display:flex; justify-content:space-between; align-items:start; gap:10px;">
+                    <div style="display:flex; gap:10px; align-items:start;">
+                        <i class="ph ${n.icon}" style="font-size:1.3rem; color:var(--${n.severity}); margin-top:2px;"></i>
+                        <div style="font-size:0.9rem;">${n.message}</div>
+                    </div>
+                    <button class="btn-icon" onclick="window.dismissNotification('${n.id}')" title="Dispensar"><i class="ph ph-x"></i></button>
+                </div>
+            </div>`).join('');
+    }
+
+    window.toggleNotifPanel = () => {
+        const overlay = document.getElementById('notif-overlay');
+        const sheet = document.getElementById('notif-sheet');
+        const isOpen = sheet.classList.contains('active');
+        if(isOpen) {
+            sheet.classList.remove('active');
+            setTimeout(() => overlay.style.display = 'none', 300);
+        } else {
+            updateNotifications();
+            overlay.style.display = 'block';
+            setTimeout(() => sheet.classList.add('active'), 10);
+        }
+    };
+
+    window.dismissNotification = (id) => {
+        if(!dismissedNotifications.includes(id)) dismissedNotifications.push(id);
+        localStorage.setItem('dismissedNotifications', JSON.stringify(dismissedNotifications));
+        updateNotifications();
+    };
+
+    window.clearAllNotifications = () => {
+        const all = computeNotifications();
+        all.forEach(n => { if(!dismissedNotifications.includes(n.id)) dismissedNotifications.push(n.id); });
+        localStorage.setItem('dismissedNotifications', JSON.stringify(dismissedNotifications));
+        updateNotifications();
+    };
+
     // ===== REALTIME LISTENERS =====
     function setupListeners() {
         onSnapshot(collection(db, "employees"), (snapshot) => {
@@ -617,6 +802,7 @@
         if(activeScreen === 'screen-dashboard') window.renderDashboard();
         if(activeScreen === 'screen-list') { populateHistoryFilter(); window.renderList(); }
         if(activeScreen === 'screen-team') window.renderTeam();
+        updateNotifications();
     }
 
     // ===== CRUD: EMPLOYEES =====
@@ -685,21 +871,55 @@
     }
 
     // ===== CRUD: CERTIFICATES =====
+    window.recalcCertDays = () => {
+        const start = document.getElementById('cert-date').value;
+        const end = document.getElementById('cert-end-date').value;
+        if(start && end) {
+            const d1 = new Date(start + 'T12:00:00');
+            const d2 = new Date(end + 'T12:00:00');
+            const diff = Math.round((d2 - d1) / 86400000) + 1;
+            if(diff > 0) document.getElementById('cert-days').value = diff;
+        }
+    };
+
     window.saveCertificate = async () => {
         const editId = document.getElementById('cert-edit-id').value;
         const empId = document.getElementById('cert-employee').value;
+        const tipo = document.getElementById('cert-tipo').value;
         const date = document.getElementById('cert-date').value;
+        const endDate = document.getElementById('cert-end-date').value;
         const days = document.getElementById('cert-days').value;
         const reason = document.getElementById('cert-reason').value.trim();
         const obs = document.getElementById('cert-obs').value.trim();
+        const fileInput = document.getElementById('cert-attachment');
+        const removeAttachment = document.getElementById('cert-remove-attachment').checked;
         if(!empId || !date || !days) return window.showToast('Preencha os campos obrigatórios!', 'error');
 
+        const btn = document.getElementById('btn-save-cert');
+        const originalBtnHTML = btn.innerHTML;
+
         const data = {
-            empId, date, days: parseInt(days), reason, obs: obs || "",
+            empId, tipo: tipo || 'Atestado Médico', date, endDate: endDate || "",
+            days: parseInt(days), reason, obs: obs || "",
             updatedAt: new Date().toISOString()
         };
 
         try {
+            // Upload de anexo, se um novo arquivo foi selecionado
+            if (fileInput.files && fileInput.files[0]) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Enviando anexo...';
+                const file = fileInput.files[0];
+                const path = `atestados/${empId}/${Date.now()}_${file.name}`;
+                const sRef = storageRef(storage, path);
+                await uploadBytes(sRef, file);
+                data.anexoUrl = await getDownloadURL(sRef);
+                data.anexoNome = file.name;
+            } else if (removeAttachment) {
+                data.anexoUrl = "";
+                data.anexoNome = "";
+            }
+
             if (editId) {
                 await updateDoc(doc(db, "certificates", editId), data);
                 window.showToast('Atestado atualizado!');
@@ -711,17 +931,29 @@
             window.closeModal();
             clearCertForm();
         } catch (e) { window.showToast('Erro: ' + e.message, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = originalBtnHTML; }
     };
 
     window.editCert = (id) => {
         const cert = window.localData.certificates.find(c => c.id === id);
         if (!cert) return;
         document.getElementById('cert-edit-id').value = id;
+        document.getElementById('cert-tipo').value = cert.tipo || 'Atestado Médico';
         document.getElementById('cert-date').value = cert.date || '';
+        document.getElementById('cert-end-date').value = cert.endDate || '';
         document.getElementById('cert-days').value = cert.days || 1;
         document.getElementById('cert-reason').value = cert.reason || '';
         document.getElementById('cert-obs').value = cert.obs || '';
-        
+        document.getElementById('cert-attachment').value = '';
+        document.getElementById('cert-remove-attachment').checked = false;
+        const attCurrent = document.getElementById('cert-attachment-current');
+        if(cert.anexoUrl) {
+            attCurrent.style.display = 'block';
+            document.getElementById('cert-attachment-link').href = cert.anexoUrl;
+        } else {
+            attCurrent.style.display = 'none';
+        }
+
         const sel = document.getElementById('cert-employee');
         sel.innerHTML = '';
         window.localData.employees.sort((a,b) => a.name.localeCompare(b.name)).forEach(e => {
@@ -747,9 +979,14 @@
 
     function clearCertForm() {
         document.getElementById('cert-edit-id').value = '';
+        document.getElementById('cert-tipo').value = 'Atestado Médico';
+        document.getElementById('cert-end-date').value = '';
         document.getElementById('cert-reason').value = '';
         document.getElementById('cert-days').value = '1';
         document.getElementById('cert-obs').value = '';
+        document.getElementById('cert-attachment').value = '';
+        document.getElementById('cert-remove-attachment').checked = false;
+        document.getElementById('cert-attachment-current').style.display = 'none';
     }
 
     // ===== MODAL =====
@@ -814,7 +1051,10 @@
         localStorage.setItem('workdaysADM', workdaysADM);
         workdays12x36 = parseInt(document.getElementById('workdays-12x36').value) || 15;
         localStorage.setItem('workdays12x36', workdays12x36);
+        metaAbsenteismo = parseFloat(document.getElementById('meta-absenteismo').value) || 0;
+        localStorage.setItem('metaAbsenteismo', metaAbsenteismo);
         window.renderDashboard();
+        updateNotifications();
         window.showToast('Configuração salva!');
     };
 
@@ -823,6 +1063,35 @@
         a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.localData, null, 2));
         a.download = `backup_saude_${new Date().toISOString().slice(0,10)}.json`; a.click();
         window.showToast('Backup baixado!');
+    };
+
+    window.exportCSV = () => {
+        const headers = ['Colaborador','Matrícula','Equipe','Escala','Cargo','Tipo de Afastamento','Data Início','Data Fim','Dias','CID/Motivo','Observações'];
+        const rows = [...window.localData.certificates]
+            .sort((a,b) => new Date(a.date) - new Date(b.date))
+            .map(c => {
+                const emp = window.localData.employees.find(e => e.id == c.empId);
+                const csvEscape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+                return [
+                    emp ? emp.name : 'Desconhecido',
+                    emp ? emp.matricula : '',
+                    emp ? emp.team : '',
+                    emp ? (emp.escala || 'ADM') : '',
+                    emp ? (emp.cargo || '') : '',
+                    c.tipo || 'Atestado Médico',
+                    c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+                    c.endDate ? new Date(c.endDate + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+                    c.days || 0,
+                    c.reason || '',
+                    c.obs || ''
+                ].map(csvEscape).join(';');
+            });
+        const csv = '\uFEFF' + [headers.map(h => `"${h}"`).join(';'), ...rows].join('\r\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        a.download = `atestados_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        window.showToast('CSV exportado!');
     };
 
     window.importData = async (event) => {
@@ -932,22 +1201,26 @@
         document.getElementById('kpi-total').innerText = filteredData.length;
         document.getElementById('kpi-days').innerText = totalDays;
         document.getElementById('kpi-rate').innerText = absentRate + '%';
+        document.getElementById('kpi-rate').style.color = parseFloat(absentRate) > metaAbsenteismo ? 'var(--danger)' : 'var(--success)';
 
         let rangeText = `Ano ${year}`;
         if(month !== 'all') rangeText += ` - ${monthName}`;
         document.getElementById('evolution-subtitle').innerText = rangeText;
 
-        // Alerts
-        renderAlerts(filteredData);
-
         // Quebra da taxa de absenteísmo por escala
         renderEscalaBreakdown(filteredData, filteredEmployees, month);
 
+        // Afastados hoje e destaque de assiduidade
+        renderTodayAbsent(filteredEmployees);
+        renderAssiduidade(filteredEmployees, filteredData);
+
         // Charts
         renderEvolutionChart(year, month, team, escalaFilter);
+        renderYearComparisonChart(team, escalaFilter);
         renderWeekDayChart(filteredData);
         renderRankingCharts(filteredData);
         renderTeamChart(filteredData);
+        renderTiposChart(filteredData);
         renderReasonsChart(filteredData);
     };
 
@@ -982,29 +1255,79 @@
         body.innerHTML = keys.map(k => {
             const g = groups[k];
             const rate = g.scheduled > 0 ? ((g.dias / g.scheduled) * 100).toFixed(1) : '0.0';
+            const rateColor = parseFloat(rate) > metaAbsenteismo ? 'var(--danger)' : 'var(--success)';
             return `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
                     <div>
                         <span class="badge badge-blue">${k}</span>
                         <span style="font-size:0.8rem; color:var(--text-light); margin-left:6px;">${g.empIds.size} colab. · ${g.qtd} atestado${g.qtd !== 1 ? 's' : ''} · ${g.dias} dia${g.dias !== 1 ? 's' : ''}</span>
                     </div>
-                    <div style="font-weight:700; font-size:1.1rem; color:var(--warning);">${rate}%</div>
+                    <div style="font-weight:700; font-size:1.1rem; color:${rateColor};">${rate}%</div>
                 </div>`;
         }).join('');
     }
 
-    function renderAlerts(filteredData) {
-        const area = document.getElementById('alerts-area');
-        area.innerHTML = '';
-        const empCounts = {};
-        filteredData.forEach(c => {
-            empCounts[c.empId] = (empCounts[c.empId] || 0) + 1;
+    // Retorna a data final efetiva de um atestado (usa endDate se existir, senão calcula por 'days')
+    function getCertEndDate(c) {
+        if(c.endDate) return new Date(c.endDate + 'T12:00:00');
+        const start = new Date(c.date + 'T12:00:00');
+        start.setDate(start.getDate() + (parseInt(c.days || 1) - 1));
+        return start;
+    }
+
+    function renderTodayAbsent(filteredEmployees) {
+        const body = document.getElementById('today-absent-body');
+        if(!body) return;
+        const today = new Date(); today.setHours(12,0,0,0);
+        const empIds = new Set(filteredEmployees.map(e => e.id));
+
+        const absentToday = window.localData.certificates.filter(c => {
+            if(!empIds.has(c.empId)) return false;
+            const start = new Date(c.date + 'T12:00:00');
+            const end = getCertEndDate(c);
+            return start <= today && today <= end;
         });
-        const alerts = Object.entries(empCounts).filter(([_, count]) => count >= alertThreshold);
-        alerts.forEach(([empId, count]) => {
-            const emp = window.localData.employees.find(e => e.id === empId);
-            area.innerHTML += `<div class="alert-bar"><i class="ph ph-warning"></i> ${emp?.name || 'Desconhecido'} possui ${count} atestados no período!</div>`;
-        });
+
+        if(absentToday.length === 0) {
+            body.innerHTML = `<div class="card-info" style="color:var(--success);"><i class="ph ph-check-circle"></i> Ninguém afastado hoje.</div>`;
+            return;
+        }
+
+        body.innerHTML = absentToday.map(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                <div>
+                    <div style="font-weight:600;">${emp ? emp.name : 'Desconhecido'}</div>
+                    <div style="font-size:0.8rem; color:var(--text-light);">${c.tipo || 'Atestado Médico'} · ${c.reason || 'Sem motivo'}</div>
+                </div>
+                <span class="badge badge-red">${c.days} dia${c.days !== 1 ? 's' : ''}</span>
+            </div>`;
+        }).join('');
+    }
+
+    function renderAssiduidade(filteredEmployees, filteredData) {
+        const body = document.getElementById('assiduidade-body');
+        if(!body) return;
+        const empIdsComAtestado = new Set(filteredData.map(c => c.empId));
+        const semAtestado = filteredEmployees.filter(e => !empIdsComAtestado.has(e.id));
+
+        if(filteredEmployees.length === 0) {
+            body.innerHTML = `<div class="card-info">Nenhum colaborador cadastrado.</div>`;
+            return;
+        }
+        if(semAtestado.length === 0) {
+            body.innerHTML = `<div class="card-info">Nenhum colaborador do grupo ficou sem atestado neste período.</div>`;
+            return;
+        }
+
+        const pct = ((semAtestado.length / filteredEmployees.length) * 100).toFixed(0);
+        body.innerHTML = `
+            <div style="margin-bottom:10px; font-weight:700; color:var(--success);">
+                <i class="ph ph-medal"></i> ${semAtestado.length} de ${filteredEmployees.length} colaboradores (${pct}%) sem nenhum atestado
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                ${semAtestado.sort((a,b)=>a.name.localeCompare(b.name)).map(e => `<span class="badge badge-green">${e.name.split(' ').slice(0,2).join(' ')}</span>`).join('')}
+            </div>`;
     }
 
     function renderEvolutionChart(year, selectedMonth, team, escalaFilter) {
@@ -1084,6 +1407,51 @@
             type: 'doughnut',
             data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: colors.slice(0, sorted.length), borderWidth: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 10 } }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 13 }, formatter: (value, ctx) => { const total = ctx.dataset.data.reduce((a,b) => a+b, 0); const pct = ((value/total)*100).toFixed(0); return value > 0 ? `${value}\n(${pct}%)` : ''; }, textAlign: 'center' } } }
+        });
+    }
+
+    function renderTiposChart(data) {
+        const tipoMap = {};
+        data.forEach(c => {
+            const tipo = c.tipo || 'Atestado Médico';
+            tipoMap[tipo] = (tipoMap[tipo] || 0) + 1;
+        });
+        const sorted = Object.entries(tipoMap).sort((a,b) => b[1] - a[1]);
+        const colors = ['#4f46e5','#ef4444','#f59e0b','#10b981','#8b5cf6','#06b6d4'];
+        if(charts.tipos) charts.tipos.destroy();
+        charts.tipos = new Chart(document.getElementById('chartTipos'), {
+            type: 'doughnut',
+            data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: colors.slice(0, sorted.length), borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 }, formatter: (value, ctx) => { const total = ctx.dataset.data.reduce((a,b) => a+b, 0); const pct = ((value/total)*100).toFixed(0); return value > 0 ? `${value} (${pct}%)` : ''; } } } }
+        });
+    }
+
+    function renderYearComparisonChart(team, escalaFilter) {
+        const data = window.localData.certificates.filter(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            if(team !== 'all' && (!emp || emp.team != team)) return false;
+            if(escalaFilter && escalaFilter !== 'all' && (!emp || (emp.escala || 'ADM') != escalaFilter)) return false;
+            return true;
+        });
+        const yearMap = {};
+        data.forEach(c => {
+            const y = new Date(c.date + 'T12:00:00').getFullYear();
+            if(!yearMap[y]) yearMap[y] = { qtd: 0, dias: 0 };
+            yearMap[y].qtd++;
+            yearMap[y].dias += parseInt(c.days || 0);
+        });
+        const years = Object.keys(yearMap).sort();
+        if(charts.yearCompare) charts.yearCompare.destroy();
+        charts.yearCompare = new Chart(document.getElementById('chartYearCompare'), {
+            type: 'bar',
+            data: {
+                labels: years,
+                datasets: [
+                    { label: 'Atestados', data: years.map(y => yearMap[y].qtd), backgroundColor: '#4f46e5', borderRadius: 4 },
+                    { label: 'Dias Perdidos', data: years.map(y => yearMap[y].dias), backgroundColor: '#ef4444', borderRadius: 4 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' }, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, anchor: 'end', align: 'top', font: { weight: 'bold', size: 11 } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
         });
     }
 
@@ -1184,6 +1552,7 @@
                 reportHTML += `</div></div>`;
             });
             reportHTML += `</div>`;
+            reportHTML += `<button class="btn btn-outline no-print" style="margin-top:10px;" onclick="window.generateEmployeePDF('${filterId}')"><i class="ph ph-file-pdf"></i> Baixar PDF deste colaborador</button>`;
             reportArea.innerHTML = reportHTML;
         } else {
             reportArea.style.display = 'none';
@@ -1197,19 +1566,24 @@
 
         data.forEach(c => {
             const emp = window.localData.employees.find(e => e.id == c.empId);
+            const tipoBadgeClass = c.tipo === 'Falta Injustificada' ? 'badge-red' : (c.tipo === 'CAT (Acidente de Trabalho)' ? 'badge-warning' : 'badge-blue');
             list.innerHTML += `
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:start;">
                         <div style="flex:1;">
                             <div class="card-title">${emp?emp.name:'Desconhecido'}</div>
-                            <div class="card-info"><i class="ph ph-calendar-blank"></i> ${new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+                            <div class="card-info"><i class="ph ph-calendar-blank"></i> ${new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR')}${c.endDate ? ' a ' + new Date(c.endDate + 'T12:00:00').toLocaleDateString('pt-BR') : ''}</div>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span class="badge badge-red">${c.days} Dias</span>
                         </div>
                     </div>
-                    <div style="margin-top:8px; font-size:0.9rem; font-weight:500;">${c.reason || '<span style="color:var(--text-light)">Sem motivo</span>'}</div>
+                    <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                        <span class="badge ${tipoBadgeClass}">${c.tipo || 'Atestado Médico'}</span>
+                        <span style="font-size:0.9rem; font-weight:500;">${c.reason || '<span style="color:var(--text-light)">Sem motivo</span>'}</span>
+                    </div>
                     ${c.obs ? `<div style="margin-top:4px; font-size:0.8rem; color:var(--text-light); font-style:italic;"><i class="ph ph-note"></i> ${c.obs}</div>` : ''}
+                    ${c.anexoUrl ? `<div style="margin-top:6px;"><a href="${c.anexoUrl}" target="_blank" style="font-size:0.8rem; color:var(--primary); font-weight:600;"><i class="ph ph-paperclip"></i> Ver anexo</a></div>` : ''}
                     <div style="margin-top:10px; display:flex; gap:4px;">
                         <button onclick="window.editCert('${c.id}')" class="btn-icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
                         <button onclick="window.delCert('${c.id}')" class="btn-icon danger" title="Excluir"><i class="ph ph-trash"></i></button>
@@ -1287,6 +1661,27 @@
                 if(wasDark) applyTheme('dark');
             });
         }, 800);
+    };
+
+    // PDF com o histórico completo de um único colaborador (resumo + lista de atestados)
+    window.generateEmployeePDF = (empId) => {
+        const emp = window.localData.employees.find(e => e.id == empId);
+        const reportArea = document.getElementById('employee-report-area');
+        const list = document.getElementById('certificates-list');
+        const wasDark = currentTheme === 'dark';
+        if(wasDark) applyTheme('light');
+
+        const temp = document.createElement('div');
+        temp.style.padding = '10px';
+        temp.innerHTML = reportArea.innerHTML + list.innerHTML;
+        temp.querySelectorAll('button').forEach(b => b.remove());
+        document.body.appendChild(temp);
+
+        const opt = { margin: 10, filename: `historico_${(emp ? emp.name : 'colaborador').replace(/\s+/g,'_')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(temp).save().then(() => {
+            document.body.removeChild(temp);
+            if(wasDark) applyTheme('dark');
+        });
     };
 </script>
 </body>
