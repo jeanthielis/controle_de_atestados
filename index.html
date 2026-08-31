@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gestão Saúde 6.0 (Cloud)</title>
-    
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gestão Saúde">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -59,6 +68,13 @@
         .subtitle { font-size: 0.85rem; opacity: 0.9; }
 
         .filter-bar { background: var(--surface); margin: -40px 20px 10px 20px; padding: 10px; border-radius: 16px; box-shadow: var(--shadow); display: flex; gap: 10px; position: relative; z-index: 60; overflow-x: auto; border: 1px solid var(--border); }
+        .dash-tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border); }
+        .dash-tab { flex: 1; padding: 10px 6px; border: none; background: transparent; border-radius: 9px; font-weight: 600; font-size: 0.78rem; color: var(--text-light); cursor: pointer; font-family: inherit; }
+        .dash-tab.active { background: var(--primary); color: #fff; }
+        .dash-tab-content { display: none; }
+        .dash-tab-content.active { display: block; }
+        .pdf-export-mode .dash-tab-content { display: block !important; }
+        .pdf-export-mode .dash-tabs { display: none !important; }
         .filter-select { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; min-width: 90px; background-color: var(--surface-2); color: var(--text-main); font-weight: 600; }
 
         .container { padding: 0 20px; }
@@ -384,64 +400,88 @@
             <div id="today-absent-body" style="margin-top:12px;"></div>
         </div>
 
-        <div class="card" id="card-escala-breakdown">
-            <div class="card-title"><i class="ph ph-clock"></i> Absenteísmo por Escala</div>
-            <div class="card-info">Taxa calculada com os dias/turnos programados de cada regime</div>
-            <div id="escala-breakdown-body" style="margin-top:12px;"></div>
+        <div class="dash-tabs no-print">
+            <button class="dash-tab active" data-tab="geral" onclick="window.showDashboardTab('geral')">Visão Geral</button>
+            <button class="dash-tab" data-tab="escala" onclick="window.showDashboardTab('escala')">Escala &amp; Cargos</button>
+            <button class="dash-tab" data-tab="rankings" onclick="window.showDashboardTab('rankings')">Rankings</button>
         </div>
 
-        <div class="card" id="card-assiduidade">
-            <div class="card-title"><i class="ph ph-medal"></i> Destaque: Assiduidade</div>
-            <div class="card-info">Colaboradores sem nenhum atestado no período filtrado</div>
-            <div id="assiduidade-body" style="margin-top:12px;"></div>
+        <div id="dash-tab-geral" class="dash-tab-content active">
+            <div class="card">
+                <div class="card-title">Evolução Anual</div>
+                <div class="card-info" id="evolution-subtitle">Atestados por período, com linha de tendência</div>
+                <div class="chart-container"><canvas id="chartEvolution"></canvas></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Comparativo Entre Anos</div>
+                <div class="card-info">Total de atestados e dias, por ano (todos os anos)</div>
+                <div class="chart-container"><canvas id="chartYearCompare"></canvas></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Padrão Semanal</div>
+                <div class="card-info">Ocorrências por dia</div>
+                <div class="chart-container"><canvas id="chartWeekDay"></canvas></div>
+            </div>
         </div>
 
-        <div class="card">
-            <div class="card-title">Evolução Anual</div>
-            <div class="card-info" id="evolution-subtitle">Atestados por período</div>
-            <div class="chart-container"><canvas id="chartEvolution"></canvas></div>
+        <div id="dash-tab-escala" class="dash-tab-content">
+            <div class="card" id="card-escala-breakdown">
+                <div class="card-title"><i class="ph ph-clock"></i> Absenteísmo por Escala</div>
+                <div class="card-info">Taxa calculada com os dias/turnos programados de cada regime</div>
+                <div id="escala-breakdown-body" style="margin-top:12px;"></div>
+            </div>
+
+            <div class="card" id="card-cargo-breakdown">
+                <div class="card-title"><i class="ph ph-identification-badge"></i> Absenteísmo por Cargo</div>
+                <div class="card-info">Pode revelar se o problema está concentrado numa função</div>
+                <div id="cargo-breakdown-body" style="margin-top:12px;"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Comparativo por Equipe</div>
+                <div class="card-info">Total de atestados por equipe</div>
+                <div class="chart-container"><canvas id="chartTeam"></canvas></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="ph ph-tag"></i> Por Tipo de Afastamento</div>
+                <div class="card-info">Atestado, falta, CAT, licença...</div>
+                <div class="chart-container"><canvas id="chartTipos"></canvas></div>
+            </div>
         </div>
 
-        <div class="card">
-            <div class="card-title">Comparativo Entre Anos</div>
-            <div class="card-info">Total de atestados e dias, por ano (todos os anos)</div>
-            <div class="chart-container"><canvas id="chartYearCompare"></canvas></div>
-        </div>
+        <div id="dash-tab-rankings" class="dash-tab-content">
+            <div class="card">
+                <div class="card-title">Ranking: Frequência</div>
+                <div class="card-info">Top 5 Colaboradores</div>
+                <div class="chart-container"><canvas id="chartRankingQty"></canvas></div>
+            </div>
 
-        <div class="card">
-            <div class="card-title">Padrão Semanal</div>
-            <div class="card-info">Ocorrências por dia</div>
-            <div class="chart-container"><canvas id="chartWeekDay"></canvas></div>
-        </div>
+            <div class="card">
+                <div class="card-title">Ranking: Gravidade</div>
+                <div class="card-info">Top 5 Dias Afastados</div>
+                <div class="chart-container"><canvas id="chartRankingDays"></canvas></div>
+            </div>
 
-        <div class="card">
-            <div class="card-title">Comparativo por Equipe</div>
-            <div class="card-info">Total de atestados por equipe</div>
-            <div class="chart-container"><canvas id="chartTeam"></canvas></div>
-        </div>
+            <div class="card">
+                <div class="card-title"><i class="ph ph-chart-pie"></i> Motivos Frequentes</div>
+                <div class="card-info">Top 5 CIDs / Motivos</div>
+                <div class="chart-container"><canvas id="chartReasons"></canvas></div>
+            </div>
 
-        <div class="card">
-            <div class="card-title"><i class="ph ph-tag"></i> Por Tipo de Afastamento</div>
-            <div class="card-info">Atestado, falta, CAT, licença...</div>
-            <div class="chart-container"><canvas id="chartTipos"></canvas></div>
-        </div>
+            <div class="card" id="card-assiduidade">
+                <div class="card-title"><i class="ph ph-medal"></i> Destaque: Assiduidade</div>
+                <div class="card-info">Colaboradores sem nenhum atestado no período filtrado</div>
+                <div id="assiduidade-body" style="margin-top:12px;"></div>
+            </div>
 
-        <div class="card">
-            <div class="card-title">Ranking: Frequência</div>
-            <div class="card-info">Top 5 Colaboradores</div>
-            <div class="chart-container"><canvas id="chartRankingQty"></canvas></div>
-        </div>
-        
-        <div class="card">
-            <div class="card-title">Ranking: Gravidade</div>
-            <div class="card-info">Top 5 Dias Afastados</div>
-            <div class="chart-container"><canvas id="chartRankingDays"></canvas></div>
-        </div>
-
-        <div class="card">
-            <div class="card-title"><i class="ph ph-chart-pie"></i> Motivos Frequentes</div>
-            <div class="card-info">Top 5 CIDs / Motivos</div>
-            <div class="chart-container"><canvas id="chartReasons"></canvas></div>
+            <div class="card" id="card-streaks">
+                <div class="card-title"><i class="ph ph-flame"></i> Sequência sem Atestado</div>
+                <div class="card-info">Dias desde o último afastamento de cada colaborador</div>
+                <div id="streaks-body" style="margin-top:12px;"></div>
+            </div>
         </div>
     </div>
     <button class="btn btn-pdf no-print" onclick="window.generatePDF()">
@@ -488,6 +528,14 @@
         <div class="card-title"><i class="ph ph-cloud-check"></i> Banco de Dados (Nuvem)</div>
         <div class="card-info">Seus dados estão sincronizados com o Google Firebase.</div>
         <div style="margin-top:10px; font-size:0.8rem; color:var(--success);">● Conectado Online</div>
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="ph ph-device-mobile"></i> Instalar como App</div>
+        <div class="card-info">Adicione o app à tela inicial do celular para abrir mais rápido e funcionar mesmo com conexão instável.</div>
+        <button class="btn btn-primary" id="install-app-btn" style="display:none; margin-top:10px;" onclick="window.installApp()">
+            <i class="ph ph-download-simple"></i> Instalar Agora
+        </button>
+        <div id="install-app-ios-hint" class="card-info" style="display:none; margin-top:10px;">No iPhone/iPad: toque em Compartilhar <i class="ph ph-export"></i> e depois em "Adicionar à Tela de Início".</div>
     </div>
     <div class="card">
         <div class="card-title"><i class="ph ph-bell-ringing"></i> Notificações: Limite de Atestados</div>
@@ -587,11 +635,16 @@
         <label>Matrícula</label><input type="text" id="emp-matricula" placeholder="Número da matrícula">
         <label>Equipe</label><input type="text" id="emp-team" placeholder="Ex: 1, 2, A, B...">
         <label>Escala de Trabalho</label>
-        <select id="emp-escala">
+        <select id="emp-escala" onchange="window.toggleEscalaRefField()">
             <option value="ADM">ADM (Administrativo)</option>
             <option value="12x36">12x36</option>
             <option value="Outra">Outra</option>
         </select>
+        <div id="emp-escala-ref-wrap" style="display:none;">
+            <label>Data de Referência (um dia em que trabalhou)</label>
+            <input type="date" id="emp-escala-ref">
+            <div class="card-info" style="margin:-8px 0 15px 0;">Usada para calcular com exatidão o padrão dia-trabalha/dia-folga da 12x36. Sem isso, o app usa uma média configurável.</div>
+        </div>
         <label>Cargo</label><input type="text" id="emp-cargo" placeholder="Cargo do colaborador">
         <button class="btn btn-primary" id="btn-save-emp" onclick="window.saveEmployee()">
             <i class="ph ph-floppy-disk"></i> Salvar
@@ -645,6 +698,32 @@
         document.getElementById('workdays-adm').value = workdaysADM;
         document.getElementById('workdays-12x36').value = workdays12x36;
         document.getElementById('meta-absenteismo').value = metaAbsenteismo;
+
+        // Registra o service worker para permitir instalar o app e abrir com conexão instável
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+        // iOS/Safari não dispara "beforeinstallprompt": mostra a dica manual de instalação
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+        if(isIOS && !isStandalone) {
+            document.getElementById('install-app-ios-hint').style.display = 'block';
+        }
+    };
+
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        const btn = document.getElementById('install-app-btn');
+        if(btn) btn.style.display = 'inline-flex';
+    });
+    window.installApp = async () => {
+        if(!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        document.getElementById('install-app-btn').style.display = 'none';
     };
 
     // ===== TOAST =====
@@ -806,17 +885,24 @@
     }
 
     // ===== CRUD: EMPLOYEES =====
+    window.toggleEscalaRefField = () => {
+        const escala = document.getElementById('emp-escala').value;
+        document.getElementById('emp-escala-ref-wrap').style.display = escala === '12x36' ? 'block' : 'none';
+    };
+
     window.saveEmployee = async () => {
         const editId = document.getElementById('emp-edit-id').value;
         const name = document.getElementById('emp-name').value.trim();
         const mat = document.getElementById('emp-matricula').value.trim();
         const team = document.getElementById('emp-team').value.trim();
         const escala = document.getElementById('emp-escala').value;
+        const escalaRef = document.getElementById('emp-escala-ref').value;
         const cargo = document.getElementById('emp-cargo').value.trim();
         if(!name) return window.showToast('Nome é obrigatório!', 'error');
 
         const data = {
             name, matricula: mat || "000", team: team || "1", escala: escala || "ADM",
+            escalaRef: escala === '12x36' ? (escalaRef || "") : "",
             cargo: cargo || "", updatedAt: new Date().toISOString()
         };
 
@@ -842,6 +928,8 @@
         document.getElementById('emp-matricula').value = emp.matricula || '';
         document.getElementById('emp-team').value = emp.team || '';
         document.getElementById('emp-escala').value = emp.escala || 'ADM';
+        document.getElementById('emp-escala-ref').value = emp.escalaRef || '';
+        window.toggleEscalaRefField();
         document.getElementById('emp-cargo').value = emp.cargo || '';
         document.getElementById('modal-title').innerText = 'Editar Colaborador';
         document.getElementById('btn-save-emp').innerHTML = '<i class="ph ph-floppy-disk"></i> Atualizar';
@@ -867,6 +955,8 @@
         document.getElementById('emp-matricula').value = '';
         document.getElementById('emp-team').value = '';
         document.getElementById('emp-escala').value = 'ADM';
+        document.getElementById('emp-escala-ref').value = '';
+        window.toggleEscalaRefField();
         document.getElementById('emp-cargo').value = '';
     }
 
@@ -1163,10 +1253,124 @@
     }
 
     // ===== DASHBOARD =====
-    // Retorna quantos dias/turnos um colaborador tem programados no período (mês ou ano) de acordo com a escala dele
-    function getScheduledDays(escala, month) {
+    // Intervalo de datas (início/fim) do período selecionado no dashboard
+    function getPeriodRange(year, month) {
+        if(month !== 'all') {
+            const m = parseInt(month);
+            return { start: new Date(year, m, 1, 12), end: new Date(year, m + 1, 0, 12) };
+        }
+        return { start: new Date(year, 0, 1, 12), end: new Date(year, 11, 31, 12) };
+    }
+
+    // Verifica se um colaborador estava programado para trabalhar em uma data específica.
+    // ADM: considera dias úteis (seg-sex). 12x36: usa a data de referência cadastrada para
+    // aplicar o padrão dia-sim/dia-não com exatidão. Sem referência cadastrada, cai no fallback.
+    function isScheduledDay(emp, dateObj) {
+        const escala = emp.escala || 'ADM';
+        if(escala === '12x36' && emp.escalaRef) {
+            const ref = new Date(emp.escalaRef + 'T12:00:00');
+            const diff = Math.round((dateObj - ref) / 86400000);
+            return (((diff % 2) + 2) % 2) === 0;
+        }
+        if(escala === 'ADM') {
+            const day = dateObj.getDay();
+            return day !== 0 && day !== 6;
+        }
+        return null; // sem regra exata disponível (12x36 sem referência, ou "Outra")
+    }
+
+    // Retorna quantos dias/turnos um colaborador tem programados no período, usando o calendário
+    // exato quando possível (ADM por dia útil, 12x36 pela data de referência) e caindo para a
+    // aproximação configurável em Configurações apenas quando não há dado suficiente.
+    function getEmployeeScheduledDays(emp, year, month) {
+        const escala = emp.escala || 'ADM';
+        if(escala === 'ADM' || (escala === '12x36' && emp.escalaRef)) {
+            const { start, end } = getPeriodRange(year, month);
+            let count = 0;
+            const d = new Date(start);
+            while(d <= end) {
+                if(isScheduledDay(emp, d)) count++;
+                d.setDate(d.getDate() + 1);
+            }
+            return count;
+        }
         const perMonth = (escala === '12x36') ? workdays12x36 : workdaysADM;
         return month !== 'all' ? perMonth : perMonth * 12;
+    }
+
+    // ===== CALENDÁRIO DA ESCALA (visão individual do colaborador) =====
+    let calendarState = { empId: null, year: new Date().getFullYear(), month: new Date().getMonth() };
+
+    window.navCalendar = (direction) => {
+        calendarState.month += direction;
+        if(calendarState.month > 11) { calendarState.month = 0; calendarState.year++; }
+        if(calendarState.month < 0) { calendarState.month = 11; calendarState.year--; }
+        renderCalendarOnly();
+    };
+
+    function renderCalendarOnly() {
+        const container = document.getElementById('scale-calendar-container');
+        if(!container) return;
+        const emp = window.localData.employees.find(e => e.id === calendarState.empId);
+        if(!emp) return;
+        container.innerHTML = buildScaleCalendarHTML(emp);
+    }
+
+    function buildScaleCalendarHTML(emp) {
+        const { year, month } = calendarState;
+        const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        const escala = emp.escala || 'ADM';
+        const hasRule = escala === 'ADM' || (escala === '12x36' && emp.escalaRef);
+
+        const firstDay = new Date(year, month, 1, 12);
+        const lastDay = new Date(year, month + 1, 0, 12);
+        const startWeekday = firstDay.getDay();
+
+        const certs = window.localData.certificates.filter(c => c.empId === emp.id);
+        const isAbsentOnDate = (d) => certs.some(c => {
+            const start = new Date(c.date + 'T12:00:00');
+            const end = getCertEndDate(c);
+            return d >= start && d <= end;
+        });
+
+        let cells = '';
+        for(let i = 0; i < startWeekday; i++) cells += `<div></div>`;
+        for(let day = 1; day <= lastDay.getDate(); day++) {
+            const d = new Date(year, month, day, 12);
+            const scheduled = hasRule ? isScheduledDay(emp, d) : null;
+            const absent = isAbsentOnDate(d);
+            let bg = 'var(--surface-2)', color = 'var(--text-light)';
+            if(scheduled === true) { bg = 'var(--primary-light)'; color = 'var(--primary)'; }
+            if(scheduled === false) { bg = 'transparent'; color = 'var(--text-light)'; }
+            if(absent) { bg = 'var(--danger)'; color = '#fff'; }
+            cells += `<div style="aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:0.75rem; font-weight:600; background:${bg}; color:${color};">${day}</div>`;
+        }
+
+        const weekdayHeaders = ['D','S','T','Q','Q','S','S'].map(d => `<div style="text-align:center; font-size:0.7rem; font-weight:700; color:var(--text-light);">${d}</div>`).join('');
+
+        let noteHTML = '';
+        if(!hasRule) {
+            noteHTML = `<div class="card-info" style="margin-top:10px; color:var(--warning);"><i class="ph ph-warning"></i> Sem data de referência cadastrada para a escala 12x36 — cadastre em "Editar Colaborador" para ver o padrão exato de dias trabalhados aqui.</div>`;
+        } else {
+            noteHTML = `<div style="display:flex; gap:14px; margin-top:10px; font-size:0.75rem; color:var(--text-light); flex-wrap:wrap;">
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--primary-light); margin-right:4px;"></span>Dia de trabalho</span>
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--surface-2); border:1px solid var(--border); margin-right:4px;"></span>Folga</span>
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--danger); margin-right:4px;"></span>Atestado</span>
+            </div>`;
+        }
+
+        return `
+            <div class="card">
+                <div class="card-title"><i class="ph ph-calendar-check"></i> Calendário da Escala</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:10px 0;">
+                    <button class="btn-icon" onclick="window.navCalendar(-1)"><i class="ph ph-caret-left"></i></button>
+                    <div style="font-weight:700;">${monthNames[month]} ${year}</div>
+                    <button class="btn-icon" onclick="window.navCalendar(1)"><i class="ph ph-caret-right"></i></button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; margin-bottom:4px;">${weekdayHeaders}</div>
+                <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;">${cells}</div>
+                ${noteHTML}
+            </div>`;
     }
 
     window.renderDashboard = () => {
@@ -1195,7 +1399,7 @@
 
         // Denominador correto: soma dos dias/turnos programados de CADA colaborador, de acordo com a escala dele
         // (em vez de usar um único valor genérico para todo mundo, o que distorce o indicador em equipes mistas)
-        const totalScheduled = filteredEmployees.reduce((acc, e) => acc + getScheduledDays(e.escala || 'ADM', month), 0) || 1;
+        const totalScheduled = filteredEmployees.reduce((acc, e) => acc + getEmployeeScheduledDays(e, year, month), 0) || 1;
         const absentRate = ((totalDays / totalScheduled) * 100).toFixed(1);
 
         document.getElementById('kpi-total').innerText = filteredData.length;
@@ -1207,12 +1411,14 @@
         if(month !== 'all') rangeText += ` - ${monthName}`;
         document.getElementById('evolution-subtitle').innerText = rangeText;
 
-        // Quebra da taxa de absenteísmo por escala
-        renderEscalaBreakdown(filteredData, filteredEmployees, month);
+        // Quebra da taxa de absenteísmo por escala e por cargo
+        renderEscalaBreakdown(filteredData, filteredEmployees, year, month);
+        renderCargoBreakdown(filteredData, filteredEmployees, year, month);
 
-        // Afastados hoje e destaque de assiduidade
+        // Afastados hoje, destaque de assiduidade e sequência sem atestado
         renderTodayAbsent(filteredEmployees);
         renderAssiduidade(filteredEmployees, filteredData);
+        renderStreaks(filteredEmployees);
 
         // Charts
         renderEvolutionChart(year, month, team, escalaFilter);
@@ -1224,7 +1430,7 @@
         renderReasonsChart(filteredData);
     };
 
-    function renderEscalaBreakdown(filteredData, filteredEmployees, month) {
+    function renderEscalaBreakdown(filteredData, filteredEmployees, year, month) {
         const body = document.getElementById('escala-breakdown-body');
         if(!body) return;
 
@@ -1233,7 +1439,7 @@
             const esc = e.escala || 'ADM';
             if(!groups[esc]) groups[esc] = { empIds: new Set(), scheduled: 0, qtd: 0, dias: 0 };
             groups[esc].empIds.add(e.id);
-            groups[esc].scheduled += getScheduledDays(esc, month);
+            groups[esc].scheduled += getEmployeeScheduledDays(e, year, month);
         });
 
         filteredData.forEach(c => {
@@ -1267,12 +1473,90 @@
         }).join('');
     }
 
+    function renderCargoBreakdown(filteredData, filteredEmployees, year, month) {
+        const body = document.getElementById('cargo-breakdown-body');
+        if(!body) return;
+
+        const groups = {};
+        filteredEmployees.forEach(e => {
+            const cargo = e.cargo && e.cargo.trim() ? e.cargo.trim() : 'Sem cargo';
+            if(!groups[cargo]) groups[cargo] = { empIds: new Set(), scheduled: 0, qtd: 0, dias: 0 };
+            groups[cargo].empIds.add(e.id);
+            groups[cargo].scheduled += getEmployeeScheduledDays(e, year, month);
+        });
+
+        filteredData.forEach(c => {
+            const emp = window.localData.employees.find(e => e.id == c.empId);
+            const cargo = emp && emp.cargo && emp.cargo.trim() ? emp.cargo.trim() : 'Sem cargo';
+            if(!groups[cargo]) groups[cargo] = { empIds: new Set(), scheduled: 0, qtd: 0, dias: 0 };
+            groups[cargo].qtd++;
+            groups[cargo].dias += parseInt(c.days || 0);
+        });
+
+        const keys = Object.keys(groups).sort((a,b) => {
+            const rateA = groups[a].scheduled > 0 ? groups[a].dias / groups[a].scheduled : 0;
+            const rateB = groups[b].scheduled > 0 ? groups[b].dias / groups[b].scheduled : 0;
+            return rateB - rateA;
+        });
+
+        if(keys.length === 0) {
+            body.innerHTML = `<div class="card-info">Nenhum colaborador cadastrado.</div>`;
+            return;
+        }
+
+        body.innerHTML = keys.map(k => {
+            const g = groups[k];
+            const rate = g.scheduled > 0 ? ((g.dias / g.scheduled) * 100).toFixed(1) : '0.0';
+            const rateColor = parseFloat(rate) > metaAbsenteismo ? 'var(--danger)' : 'var(--success)';
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                        <span class="badge badge-blue">${k}</span>
+                        <span style="font-size:0.8rem; color:var(--text-light); margin-left:6px;">${g.empIds.size} colab. · ${g.qtd} atestado${g.qtd !== 1 ? 's' : ''} · ${g.dias} dia${g.dias !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style="font-weight:700; font-size:1.1rem; color:${rateColor};">${rate}%</div>
+                </div>`;
+        }).join('');
+    }
+
     // Retorna a data final efetiva de um atestado (usa endDate se existir, senão calcula por 'days')
     function getCertEndDate(c) {
         if(c.endDate) return new Date(c.endDate + 'T12:00:00');
         const start = new Date(c.date + 'T12:00:00');
         start.setDate(start.getDate() + (parseInt(c.days || 1) - 1));
         return start;
+    }
+
+    // Sequência de dias sem atestado por colaborador, a partir do fim do último afastamento
+    function renderStreaks(filteredEmployees) {
+        const body = document.getElementById('streaks-body');
+        if(!body) return;
+        const today = new Date(); today.setHours(12,0,0,0);
+
+        const streaks = filteredEmployees.map(e => {
+            const certs = window.localData.certificates.filter(c => c.empId === e.id);
+            if(certs.length === 0) return { emp: e, days: null, label: 'Nunca teve atestado' };
+            const lastEnd = certs.reduce((latest, c) => {
+                const end = getCertEndDate(c);
+                return end > latest ? end : latest;
+            }, new Date(0));
+            const diffDays = Math.round((today - lastEnd) / 86400000);
+            return { emp: e, days: diffDays, label: `${diffDays} dia${diffDays !== 1 ? 's' : ''} sem atestado` };
+        });
+
+        streaks.sort((a,b) => (b.days === null ? Infinity : b.days) - (a.days === null ? Infinity : a.days));
+        const top = streaks.slice(0, 8);
+
+        if(top.length === 0) {
+            body.innerHTML = `<div class="card-info">Nenhum colaborador cadastrado.</div>`;
+            return;
+        }
+
+        body.innerHTML = top.map(s => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                <span style="font-weight:600; font-size:0.9rem;">${s.emp.name}</span>
+                <span class="badge ${s.days === null || s.days > 90 ? 'badge-green' : (s.days > 30 ? 'badge-blue' : 'badge-warning')}">${s.label}</span>
+            </div>`).join('');
     }
 
     function renderTodayAbsent(filteredEmployees) {
@@ -1341,17 +1625,27 @@
         });
         const counts = Array(12).fill(0);
         dataYear.forEach(c => counts[new Date(c.date + 'T12:00:00').getMonth()]++);
+
+        // Média móvel de 3 meses (suaviza picos isolados e mostra a tendência real)
+        const trend = counts.map((_, i, arr) => {
+            const window3 = [arr[i-2], arr[i-1], arr[i]].filter(v => v !== undefined);
+            return window3.length > 0 ? window3.reduce((a,b) => a+b, 0) / window3.length : null;
+        });
+
         const ctx = document.getElementById('chartEvolution').getContext('2d');
         if(charts.evolution) charts.evolution.destroy();
         charts.evolution = new Chart(ctx, {
             type: 'line',
             data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-                datasets: [{ label: 'Atestados', data: counts, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4,
-                    pointRadius: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? 8 : 4,
-                    pointBackgroundColor: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? '#ef4444' : '#4f46e5'
-                }]
+                datasets: [
+                    { label: 'Atestados', data: counts, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4,
+                        pointRadius: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? 8 : 4,
+                        pointBackgroundColor: (ctx) => (selectedMonth !== 'all' && ctx.dataIndex == selectedMonth) ? '#ef4444' : '#4f46e5'
+                    },
+                    { label: 'Tendência (média móvel 3m)', data: trend, borderColor: '#f59e0b', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false, tension: 0.4, datalabels: { display: false } }
+                ]
             },
-            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, datalabels:{ display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, anchor:'end', align:'top', font:{weight:'bold',size:11}, color: '#4f46e5' }}, scales: { y: { beginAtZero: true, ticks: {precision:0} } } }
+            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', labels:{boxWidth:12, font:{size:10}}}, datalabels:{ display: (ctx) => ctx.datasetIndex === 0 && ctx.dataset.data[ctx.dataIndex] > 0, anchor:'end', align:'top', font:{weight:'bold',size:11}, color: '#4f46e5' }}, scales: { y: { beginAtZero: true, ticks: {precision:0} } } }
         });
     }
 
@@ -1553,7 +1847,16 @@
             });
             reportHTML += `</div>`;
             reportHTML += `<button class="btn btn-outline no-print" style="margin-top:10px;" onclick="window.generateEmployeePDF('${filterId}')"><i class="ph ph-file-pdf"></i> Baixar PDF deste colaborador</button>`;
+            reportHTML += `<div id="scale-calendar-container" style="margin-top:16px;"></div>`;
             reportArea.innerHTML = reportHTML;
+            if(emp) {
+                if(calendarState.empId !== emp.id) {
+                    calendarState.empId = emp.id;
+                    calendarState.year = new Date().getFullYear();
+                    calendarState.month = new Date().getMonth();
+                }
+                renderCalendarOnly();
+            }
         } else {
             reportArea.style.display = 'none';
             summary.style.display = 'none';
@@ -1647,17 +1950,26 @@
     };
 
     // ===== PDF =====
+    window.showDashboardTab = (tab) => {
+        document.querySelectorAll('.dash-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.dash-tab-content').forEach(c => c.classList.toggle('active', c.id === 'dash-tab-' + tab));
+        // Chart.js precisa recalcular o tamanho depois que o container volta a ficar visível
+        requestAnimationFrame(() => Object.values(charts).forEach(c => c && c.resize()));
+    };
+
     window.generatePDF = () => {
         const element = document.getElementById('report-area');
         const btn = document.querySelector('.btn-pdf');
         const wasDark = currentTheme === 'dark';
         if(wasDark) applyTheme('light');
+        element.classList.add('pdf-export-mode');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Gerando...';
         setTimeout(() => {
             const opt = { margin: 10, filename: `relatorio_saude_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
             html2pdf().set(opt).from(element).save().then(() => {
                 btn.innerHTML = originalText;
+                element.classList.remove('pdf-export-mode');
                 if(wasDark) applyTheme('dark');
             });
         }, 800);
