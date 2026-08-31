@@ -234,32 +234,38 @@
                 max-width: calc(100% - 260px);
             }
 
-            /* 3. Dashboard em Grid (2 colunas) */
-            #report-area {
+            /* 3. Dashboard em Grid (2 colunas) — aplicado dentro de cada aba, não no #report-area
+               inteiro, já que #report-area agora tem wrappers (KPIs, Afastados Hoje, abas) que não
+               são cards e não devem virar células de grid. */
+            .dash-tab-content.active {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
                 gap: 20px;
             }
-            
+
             .kpi-grid-3 {
-                grid-column: span 2;
                 gap: 20px;
-                margin-bottom: 0;
+                margin-bottom: 20px;
             }
-            
+
             .card {
                 margin-bottom: 0;
                 height: 100%;
                 display: flex;
                 flex-direction: column;
             }
-            
-            .chart-container {
-                flex: 1; /* Faz o gráfico preencher o espaço do card */
+
+            #card-today-absent {
+                margin-bottom: 20px;
             }
 
-            /* Gráfico de Evolução ocupa a linha inteira */
-            #report-area .card:nth-child(2) {
+            .chart-container {
+                flex: 1; /* Faz o gráfico preencher o espaço do card */
+                min-height: 220px; /* nunca menor que o tamanho legível padrão */
+            }
+
+            /* Gráfico de Evolução e Comparativo Entre Anos ocupam a linha inteira */
+            .grid-span-2 {
                 grid-column: span 2;
             }
 
@@ -407,13 +413,13 @@
         </div>
 
         <div id="dash-tab-geral" class="dash-tab-content active">
-            <div class="card">
+            <div class="card grid-span-2">
                 <div class="card-title">Evolução Anual</div>
                 <div class="card-info" id="evolution-subtitle">Atestados por período, com linha de tendência</div>
                 <div class="chart-container"><canvas id="chartEvolution"></canvas></div>
             </div>
 
-            <div class="card">
+            <div class="card grid-span-2">
                 <div class="card-title">Comparativo Entre Anos</div>
                 <div class="card-info">Total de atestados e dias, por ano (todos os anos)</div>
                 <div class="chart-container"><canvas id="chartYearCompare"></canvas></div>
