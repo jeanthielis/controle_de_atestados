@@ -362,8 +362,8 @@
 </div>
 
 <div id="dashboard-filters" class="filter-bar">
-    <select id="filter-year" class="filter-select" onchange="window.renderDashboard()"></select>
-    <select id="filter-month" class="filter-select" onchange="window.renderDashboard()">
+    <select id="filter-year" class="filter-select" autocomplete="off" onchange="window.renderDashboard()"></select>
+    <select id="filter-month" class="filter-select" autocomplete="off" name="filtro-mes-atestado" onchange="window.renderDashboard()">
         <option value="all">Mês: Todos</option>
         <option value="0">Janeiro</option><option value="1">Fevereiro</option>
         <option value="2">Março</option><option value="3">Abril</option>
@@ -372,10 +372,10 @@
         <option value="8">Setembro</option><option value="9">Outubro</option>
         <option value="10">Novembro</option><option value="11">Dezembro</option>
     </select>
-    <select id="filter-team" class="filter-select" onchange="window.renderDashboard()">
+    <select id="filter-team" class="filter-select" autocomplete="off" onchange="window.renderDashboard()">
         <option value="all">Equipe: Todas</option>
     </select>
-    <select id="filter-escala" class="filter-select" onchange="window.renderDashboard()">
+    <select id="filter-escala" class="filter-select" autocomplete="off" onchange="window.renderDashboard()">
         <option value="all">Escala: Todas</option>
         <option value="ADM">ADM</option>
         <option value="12x36">12x36</option>
